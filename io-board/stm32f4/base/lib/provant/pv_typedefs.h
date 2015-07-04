@@ -154,6 +154,38 @@ typedef struct {
 	float x, y, z, yaw;
 } pv_type_pathtrack_error;
 
+typedef struct {
+        int16_t iJogData : 15;
+        uint8_t uiReserved1 : 1;
+        uint8_t uiStop : 1;
+        uint8_t uiMode : 1; //1 : Speed Control
+        uint8_t uiLed : 3; //Green, Blue, Red
+        uint8_t uiJogInvalid : 1;
+        uint8_t uiReserved2 : 2;
+        uint8_t ucID : 8;
+        uint8_t ucJogTime_ms;
+} pv_ijog_herkulex;
+
+typedef struct {
+        int16_t iJogData : 15;
+        uint8_t uiReserved1 : 1;
+        uint8_t uiStop : 1;
+        uint8_t uiMode : 1; //1 : Speed Control
+        uint8_t uiLed : 3; //Green, Blue, Red
+        uint8_t uiJogInvalid : 1;
+        uint8_t uiReserved2 : 2;
+        uint8_t ucID : 8;
+} pv_sjog_herkulex;
+
+typedef struct
+{
+        uint32_t heartBeat;
+        int32_t  pwm;
+        float angularSpeed;
+        float position;
+        uint32_t status;
+} pv_msg_servo;
+
 /* Exported messages ---------------------------------------------------------*/
 
 /** \brief Estrutura de mensagens para os dois RX24f e ESCs.
