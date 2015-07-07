@@ -26,11 +26,7 @@
 #include "c_common_gpio.h"
 #include "c_common_i2c.h"
 #include "c_io_blctrl.h"
-#include "c_io_rx24f.h"
-
-/*Control includes*/
-#include "c_rc_BS_control.h"
-
+#include "c_io_herkulex.h"
 #include "pv_typedefs.h"
 
 /* Exported types ------------------------------------------------------------*/
@@ -40,6 +36,7 @@ struct pv_interface_co
   xQueueHandle oControlOutputData;  
 } pv_interface_co;
 /* Exported constants --------------------------------------------------------*/
+#define SERVO_IN_TEST 0
 /* Exported macro ------------------------------------------------------------*/
 #define ESC_MINIMUM_VELOCITY	10//esc set point value (0-255)
 /* Exported functions ------------------------------------------------------- */

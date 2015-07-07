@@ -26,12 +26,17 @@
 #define MODULE_PERIOD	 5//ms
 #define ESC_ON           1
 #define SERVO_ON         1
-
+#define USART_BAUDRATE     115200
+#define QUEUE_SIZE 500
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 portTickType lastWakeTime;
 pv_msg_input iInputData;
-pv_msg_controlOutput oControlOutputData; 
+pv_msg_controlOutput oControlOutputData;
+char DATA[100];
+int32_t size;// = sizeof(pv_msg_esc);
+uint8_t servo_id1;
+uint8_t servo_id2;
 //GPIOPin debugPin;
 /* Inboxes buffers */
 pv_type_actuation    iActuation;
@@ -39,7 +44,13 @@ pv_type_actuation    iActuation;
 
 /* Private function prototypes -----------------------------------------------*/
 unsigned char setPointESC_Forca(float forca);
-/* Private functions ---------------------------------------------------------*/
+float position_controller(float r, float y);
+float velocity_controller(float r, float y);
+float velocity_feedforward(float r);
+int16_t saturate(float x, const float max);
+int16_t get_stepped_pwm(int heartBeat, int16_t pwm);
+int check_outlier(int new,int sec);
+
 /* Exported functions definitions --------------------------------------------*/
 
 /** \brief Inicializacao do módulo de controle + output.
@@ -57,20 +68,55 @@ void module_co_init()
   c_io_blctrl_init_i2c(I2C3);
 
   /* Inicializar os servos */
-  c_io_rx24f_init(1000000);
-  c_common_utils_delayms(2);
-  c_io_rx24f_setSpeed(1, 200);
-  c_io_rx24f_setSpeed(2, 200);
-  c_common_utils_delayms(2);
-  /* CCW Compliance Margin e CCW Compliance margin */
-  c_io_rx24f_write(1, 0x1A,0x03);
-  c_io_rx24f_write(1, 0x1B,0x03);
-  c_io_rx24f_write(2, 0x1A,0x03);
-  c_io_rx24f_write(2, 0x1B,0x03);
-  c_common_utils_delayms(2);
-  c_io_rx24f_move(1, 130);
-  c_io_rx24f_move(2, 150);
-  c_common_utils_delayms(100);
+  servo_id=253;
+  /* Inicia a usart */
+  c_io_herkulex_init(USARTn,USART_BAUDRATE);
+  //c_common_utils_delayms(12);
+  c_io_herkulex_clear(servo_id);
+  //c_common_utils_delayms(12);
+  c_io_herkulex_reboot(servo_id);
+  c_common_utils_delayms(1000);
+  c_io_herkulex_set_torque_control(servo_id,TORQUE_FREE);//torque free
+
+  DATA[0]=1;
+  //only reply to read commands
+  c_io_herkulex_config_ack_policy(servo_id,1);
+
+  //Acceleration Ratio = 0
+  DATA[0]=0;
+  c_io_herkulex_write(RAM,servo_id,REG_ACC_RATIO,1,DATA);
+
+  //set no acceleration time
+  DATA[0]=0;
+  c_io_herkulex_write(RAM,servo_id,REG_MAX_ACC_TIME,1,DATA);
+
+  DATA[0]=0;
+  c_io_herkulex_write(RAM,servo_id,REG_PWM_OFFSET,1,DATA);
+
+  //min pwm = 0
+  DATA[0]=0;
+  c_io_herkulex_write(RAM,servo_id,REG_MIN_PWM,1,DATA);
+
+  //max pwm >1023 -> no max pwm
+  DATA[1]=0x03;//little endian 0x03FF sent
+  DATA[0]=0xFF;
+  c_io_herkulex_write(RAM,servo_id,REG_MAX_PWM,2,DATA);
+
+  //0x7FFE max. pwm
+  DATA[1]=0x03;//little endian
+  DATA[0]=0xFF;//maximo em 1023
+  c_io_herkulex_write(RAM,servo_id,REG_MAX_PWM,2,DATA);
+
+  /** set overload pwm register, if overload_pwm>1023, overload is never
+   * activated this is good for data acquisition, but may not be the case for
+   * the tilt-rotor actualy flying.
+   */
+  DATA[0]=0xFF;
+  DATA[1]=0x03;//little endian, 2048 sent
+  c_io_herkulex_write(RAM,servo_id,REG_OVERLOAD_PWM_THRESHOLD,1,DATA);
+
+  c_io_herkulex_set_torque_control(servo_id,TORQUE_ON);//set torque on
+  c_common_utils_delayms(50);
 
   /*Inicializar o tipo de controlador*/
   c_rc_BS_control_init();
@@ -95,47 +141,157 @@ void module_co_init()
 void module_co_run() 
 {
   unsigned int heartBeat=0;
-  /* Inicializa os dados da attitude*/
+  /* Inicializa os dados da atuação*/
   oControlOutputData.actuation.servoRight = 0;
   oControlOutputData.actuation.servoLeft  = 0;
   oControlOutputData.actuation.escRightSpeed = 0;
   oControlOutputData.actuation.escLeftSpeed  = 0;
 
+  /* Inicializa os dados da atuação*/
+  uint8_t status = 0;
+  int st =0, el=0;
+  uint8_t status_error=0, status_detail=0;
+  int16_t pwm = 0;
+  float new_vel=0, new_pos = 0, sec_vel = 0, sec_pos = 0;
+  c_io_herkulex_set_torque(servo_id, pwm);
+  //c_common_utils_delayms(100);
+  int32_t data_counter=0;
+  int32_t queue_data_counter = 0;
+  int32_t lost_data_counter = 0;
+  uint8_t data_received = 0;
+  c_io_herkulex_set_goal_position(servo_id,0);
+
+  c_io_herkulex_read_data(servo_id);
+  float initial_position = c_io_herkulex_get_position(servo_id);
+
+  float ref_pos = initial_position + 5*PI/180;
+  portBASE_TYPE xStatus;
+  c_common_utils_delayms(1);
+
   while(1) 
   {
-	/* Variavel para debug */
-	heartBeat+=1;
+	  /* Variavel para debug */
+	  heartBeat+=1;
 
-	/* toggle pin for debug */
-	//c_common_gpio_toggle(debugPin);
-
-    /* Passa os valores davariavel compartilha para a variavel iInputData */
+	/* Passa os valores davariavel compartilha para a variavel iInputData */
     xQueueReceive(pv_interface_co.iInputData, &iInputData, 0);
 
     /* Leitura do numero de ciclos atuais */
 	lastWakeTime = xTaskGetTickCount();
 
+	/*-------------------Calculo do controle------------------------------*/
+
+	/*-------------------Escrita dos servos-------------------------------*/
+
+	/**
+	 * Leitura de dados
+	 */
+	 if(iInputData.receiverOutput.joystick[0]<2 && iInputData.receiverOutput.joystick[0]>-2)
+	 {
+		 c_io_herkulex_set_torque(servo_id1, iInputData.receiverOutput.joystick[0]);
+		 c_io_herkulex_set_torque(servo_id2, iInputData.receiverOutput.joystick[0]);
+	 }
+	#if !SERVO_IN_TEST
+			if (c_io_herkulex_read_data(servo_id))
+			{
+				new_vel = c_io_herkulex_get_velocity(servo_id);
+				oControlOutputData.vantBehavior.rpy[0]= new_vel;
+				new_pos = c_io_herkulex_get_position(servo_id);
+				oControlOutputData.vantBehavior.rpy[1] = new_pos;
+				oControlOutputData.vantBehavior.rpy[3]=1;
+				data_counter++;
+				data_received=1;
+				status_error = c_io_herkulex_get_status_error();
+				status_detail = c_io_herkulex_get_status_detail();
+				if (status_error) {
+					c_io_herkulex_clear(servo_id);
+				}
+			} else
+			{
+				data_received = 0;
+				oServoMsg.angularSpeed=0;
+				oServoMsg.position=0;
+				oServoMsg.heartBeat=heartBeat;
+				oServoMsg.pwm=0;
+				oServoMsg.status=0;
+			}
 
 
-	/* Escrita dos servos */
 
-	if (iInputData.securityStop){
-		c_io_rx24f_move(1, 130+0);
-		c_io_rx24f_move(2, 150+0);
-	}
-	else{
-		// inicializacao
-		if (iInputData.init){
-			c_io_rx24f_move(1, 130+0);
-			c_io_rx24f_move(2, 150+0);
+
+
+	#endif
+			//pwm=200;
+
+	#if !SERVO_IN_TEST
+
+			/**
+			 * Envio dos dados para o modulo de comunicação
+			 * Verificação da integridade dos pacotes recebidos
+			 */
+			status = c_io_herkulex_get_status();//indica erros de comunicação
+
+			if (status)
+			{
+				oServoMsg.pwm=pwm;
+				oServoMsg.heartBeat=heartBeat;
+				xStatus = xQueueSend(pv_interface_servo.oServoOutput,
+						&oServoMsg,1/portTICK_RATE_MS);
+				if (!xStatus) xQueueSend(pv_interface_servo.oServoOutput,
+						&oServoMsg,1/portTICK_RATE_MS);
+
+				queue_data_counter++;
+			} else
+			{
+				c_io_herkulex_stat(servo_id);
+				status_error=c_io_herkulex_get_status_error();
+				status_detail=c_io_herkulex_get_status_detail();
+				if (status_error!=0 || status_detail!= 0)
+				{
+					c_io_herkulex_clear(servo_id);
+				}
+				lost_data_counter++;
+			}
+
+
+			/**
+			 * Para utilização em testes finitos dos servos.
+			 * O tamanho da fila(xQueue) indica o numero de pontos acumulados
+			 */
+			//c_common_utils_delayms(1);=1000
+			uint16_t queue_size = uxQueueMessagesWaiting(
+					pv_interface_servo.oServoOutput);
+			if (queue_size<QUEUE_SIZE)
+			{
+	#endif
+				lastWakeTime=wakeTime;
+				vTaskDelayUntil( &lastWakeTime, (MODULE_PERIOD / portTICK_RATE_MS));
+	#if !SERVO_IN_TEST
+			} else
+			{
+				break;
+			}
+	#endif
 		}
-		else{
-			if( (iActuation.servoRight*RAD_TO_DEG<70) && (iActuation.servoRight*RAD_TO_DEG>-70) )
-				c_io_rx24f_move(2, 150+iActuation.servoRight*RAD_TO_DEG);
-			if( (iActuation.servoLeft*RAD_TO_DEG<70) && (iActuation.servoLeft*RAD_TO_DEG>-70) )
-				c_io_rx24f_move(1, 130+iActuation.servoLeft*RAD_TO_DEG);
-		}
-	}
+		c_io_herkulex_set_torque(servo_id, 0);
+		c_io_herkulex_set_torque_control(servo_id,TORQUE_BREAK);//set torque free
+//	if (iInputData.securityStop){
+//		c_io_rx24f_move(1, 130+0);
+//		c_io_rx24f_move(2, 150+0);
+//	}
+//	else{
+//		// inicializacao
+//		if (iInputData.init){
+//			c_io_rx24f_move(1, 130+0);
+//			c_io_rx24f_move(2, 150+0);
+//		}
+//		else{
+//			if( (iActuation.servoRight*RAD_TO_DEG<70) && (iActuation.servoRight*RAD_TO_DEG>-70) )
+//				c_io_rx24f_move(2, 150+iActuation.servoRight*RAD_TO_DEG);
+//			if( (iActuation.servoLeft*RAD_TO_DEG<70) && (iActuation.servoLeft*RAD_TO_DEG>-70) )
+//				c_io_rx24f_move(1, 130+iActuation.servoLeft*RAD_TO_DEG);
+//		}
+//	}
 
 	/* Escrita dos esc */
 	unsigned char sp_right;
@@ -194,6 +350,8 @@ void module_co_run()
 	}
 }
 
+/* Private functions ---------------------------------------------------------*/
+
 /**\ brief Calcula o set point do ESC a partir da forca passada por argumento
  * Curva retirada dos ensaios com os motores brushless no INEP
  */
@@ -210,6 +368,95 @@ unsigned char setPointESC_Forca(float forca){
 	    	return (unsigned char)255;
 	    else
 	    	return (unsigned char)set_point;}
+}
+float position_controller(float r, float y)
+{
+	static float e_old = 0, u = 0;
+	float e = r-y;
+	//Tset=200ms PASSOU no teste RP 5/6
+	//int K1 = 144.1257, K2 = 92.8029;
+	//int K1=619.4, K2=318.4955; //original
+	//Passou no teste RP 5x
+	//int K1 = 22.0272, K2=20.6867;// slow motherfucker PI
+	int K1 = 11.1838, K2 = -10.8214;
+	u=u+K1*e-K2*e_old; //intermediario
+	e_old=e;
+	//saturacao
+
+	//assert(out>=(-1023) && out<=1023);
+
+	return u;
+}
+
+float velocity_controller(float r, float y)
+{
+	static float e_old = 0, u = 0;
+	float e = r-y;
+	//Tset=200ms PASSOU no teste RP 5/6
+	int K1 = 144.1257, K2 = 92.8029;
+	//int K1=619.4, K2=318.4955; //original
+	//Passou no teste RP 5x20.6867
+	//int K1 = 15.966, K2=7.9196;// slow motherfucker PI
+
+	u=u+K1*e-K2*e_old;
+	e_old=e;
+	//saturacao
+
+	//assert(out>=(-1023) && out<=1023);
+
+	return u;
+}
+
+float velocity_feedforward(float r)
+{
+	static float y = 0;
+	//y=0.5142*(y+r); //original
+	y=0.6439*y+0.3561*r; //slow
+
+	return y;
+}
+
+int16_t saturate(float x, const float max)
+{
+	if (x>max)
+		x=max;
+	else if (x<(-max))
+		x=-max;
+	if (x>0) x+=0.5;
+	if (x<0) x-=0.5;
+
+
+	return (int16_t)x;
+}
+
+int16_t get_stepped_pwm(int heartBeat, int16_t pwm)
+{
+  static int8_t counter = 0, inc=1;
+
+  //parametros da escada
+  const int STEP_LENGTH = 50; //tamanho do degraus em ptos de amostragem
+  const int STEP_SIZE = 200; //amplitude dos degraus
+  const int NUM_STEPS = 5; //numero de degraus
+
+  if ((heartBeat%STEP_LENGTH)==0)
+  {
+    if (counter == NUM_STEPS) inc=0;
+    else if (counter == -NUM_STEPS) inc=1;
+    if (inc) counter++;
+    else counter--;
+    pwm=counter*200;
+    //if (pwm) pwm=0;
+    //else pwm=1000;
+  }
+
+  return pwm;
+}
+//new value, and secure value
+int check_outlier(int new, int sec)
+{
+	int limite = 0.6;
+	return ((sec>=0 && (new>=sec*limite)) ||
+			(sec<0 && (new<=sec*limite)));
 }
 /* IRQ handlers ------------------------------------------------------------- */
 
