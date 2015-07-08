@@ -56,8 +56,8 @@ void module_in_init()
 	LED_builtin_io = c_common_gpio_init(GPIOD, GPIO_Pin_15, GPIO_Mode_OUT);
 
 	/* Inicialização da imu */
-	c_common_i2c_init(I2C1); 
-	c_io_imu_init(I2C1); 
+//	c_common_i2c_init(I2C1);
+//	c_io_imu_init(I2C1);
 	/* Inicializador do sonar */
 	c_io_sonar_init();
 
@@ -147,11 +147,11 @@ void module_in_run()
 
 	/*----------------------Tratamento da IMU---------------------*/
     /* Pega e trata os valores da imu */
-	c_io_imu_getRaw(oInputData.imuOutput.accRaw, oInputData.imuOutput.gyrRaw, oInputData.imuOutput.magRaw,sample_time_gyro_us);
-	c_datapr_MahonyAHRSupdate(attitude_quaternion,oInputData.imuOutput.gyrRaw[0],oInputData.imuOutput.gyrRaw[1],oInputData.imuOutput.gyrRaw[2],oInputData.imuOutput.accRaw[0],oInputData.imuOutput.accRaw[1],oInputData.imuOutput.accRaw[2],oInputData.imuOutput.magRaw[0],oInputData.imuOutput.magRaw[1],oInputData.imuOutput.magRaw[2],sample_time_gyro_us[0]);
-	c_io_imu_Quaternion2Euler(attitude_quaternion, rpy);
-	c_io_imu_EulerMatrix(rpy,oInputData.imuOutput.gyrRaw);
-	oInputData.imuOutput.sampleTime =xTaskGetTickCount() -lastWakeTime;
+//	c_io_imu_getRaw(oInputData.imuOutput.accRaw, oInputData.imuOutput.gyrRaw, oInputData.imuOutput.magRaw,sample_time_gyro_us);
+//	c_datapr_MahonyAHRSupdate(attitude_quaternion,oInputData.imuOutput.gyrRaw[0],oInputData.imuOutput.gyrRaw[1],oInputData.imuOutput.gyrRaw[2],oInputData.imuOutput.accRaw[0],oInputData.imuOutput.accRaw[1],oInputData.imuOutput.accRaw[2],oInputData.imuOutput.magRaw[0],oInputData.imuOutput.magRaw[1],oInputData.imuOutput.magRaw[2],sample_time_gyro_us[0]);
+//	c_io_imu_Quaternion2Euler(attitude_quaternion, rpy);
+//	c_io_imu_EulerMatrix(rpy,oInputData.imuOutput.gyrRaw);
+//	oInputData.imuOutput.sampleTime =xTaskGetTickCount() -lastWakeTime;
 
     /* Saida dos dados de posição limitada a uma variaçao minima */
     if (abs2(rpy[PV_IMU_ROLL]-oInputData.attitude.roll)>ATTITUDE_MINIMUM_STEP)
@@ -272,7 +272,7 @@ void module_in_run()
 		iterations++;
 
     /* toggle pin for debug */
-    //c_common_gpio_toggle(LED_builtin_io);
+    c_common_gpio_toggle(LED_builtin_io);
 
     /* Realiza o trabalho de mutex */
 	if(pv_interface_in.oInputData != 0)
