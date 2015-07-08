@@ -28,6 +28,7 @@
 #define SERVO_ON         1
 #define USART_BAUDRATE     115200
 #define QUEUE_SIZE 500
+USART_TypeDef *USARTn = USART1;
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 portTickType lastWakeTime;
@@ -64,48 +65,49 @@ void module_co_init()
 {
 
   /* Inicializar os escs*/
-  c_common_i2c_init(I2C3);
-  c_io_blctrl_init_i2c(I2C3);
+//  c_common_i2c_init(I2C3);
+//  c_io_blctrl_init_i2c(I2C3);
 
   /* Inicializar os servos */
-  servo_id=253;
+  servo_id1=253;
+  servo_id2=150;
   /* Inicia a usart */
   c_io_herkulex_init(USARTn,USART_BAUDRATE);
   //c_common_utils_delayms(12);
-  c_io_herkulex_clear(servo_id);
+  c_io_herkulex_clear(servo_id1);
   //c_common_utils_delayms(12);
-  c_io_herkulex_reboot(servo_id);
+  c_io_herkulex_reboot(servo_id1);
   c_common_utils_delayms(1000);
-  c_io_herkulex_set_torque_control(servo_id,TORQUE_FREE);//torque free
+  c_io_herkulex_set_torque_control(servo_id1,TORQUE_FREE);//torque free
 
   DATA[0]=1;
   //only reply to read commands
-  c_io_herkulex_config_ack_policy(servo_id,1);
+  c_io_herkulex_config_ack_policy(servo_id1,1);
 
   //Acceleration Ratio = 0
   DATA[0]=0;
-  c_io_herkulex_write(RAM,servo_id,REG_ACC_RATIO,1,DATA);
+  c_io_herkulex_write(RAM,servo_id1,REG_ACC_RATIO,1,DATA);
 
   //set no acceleration time
   DATA[0]=0;
-  c_io_herkulex_write(RAM,servo_id,REG_MAX_ACC_TIME,1,DATA);
+  c_io_herkulex_write(RAM,servo_id1,REG_MAX_ACC_TIME,1,DATA);
 
   DATA[0]=0;
-  c_io_herkulex_write(RAM,servo_id,REG_PWM_OFFSET,1,DATA);
+  c_io_herkulex_write(RAM,servo_id1,REG_PWM_OFFSET,1,DATA);
 
   //min pwm = 0
   DATA[0]=0;
-  c_io_herkulex_write(RAM,servo_id,REG_MIN_PWM,1,DATA);
+  c_io_herkulex_write(RAM,servo_id1,REG_MIN_PWM,1,DATA);
 
   //max pwm >1023 -> no max pwm
   DATA[1]=0x03;//little endian 0x03FF sent
   DATA[0]=0xFF;
-  c_io_herkulex_write(RAM,servo_id,REG_MAX_PWM,2,DATA);
+  c_io_herkulex_write(RAM,servo_id1,REG_MAX_PWM,2,DATA);
 
   //0x7FFE max. pwm
   DATA[1]=0x03;//little endian
   DATA[0]=0xFF;//maximo em 1023
-  c_io_herkulex_write(RAM,servo_id,REG_MAX_PWM,2,DATA);
+  c_io_herkulex_write(RAM,servo_id1,REG_MAX_PWM,2,DATA);
 
   /** set overload pwm register, if overload_pwm>1023, overload is never
    * activated this is good for data acquisition, but may not be the case for
@@ -113,13 +115,13 @@ void module_co_init()
    */
   DATA[0]=0xFF;
   DATA[1]=0x03;//little endian, 2048 sent
-  c_io_herkulex_write(RAM,servo_id,REG_OVERLOAD_PWM_THRESHOLD,1,DATA);
+  c_io_herkulex_write(RAM,servo_id1,REG_OVERLOAD_PWM_THRESHOLD,1,DATA);
 
-  c_io_herkulex_set_torque_control(servo_id,TORQUE_ON);//set torque on
+  c_io_herkulex_set_torque_control(servo_id1,TORQUE_ON);//set torque on
   c_common_utils_delayms(50);
 
   /*Inicializar o tipo de controlador*/
-  c_rc_BS_control_init();
+
 
   /* Pin for debug */
   //debugPin = c_common_gpio_init(GPIOE, GPIO_Pin_13, GPIO_Mode_OUT);
@@ -153,16 +155,16 @@ void module_co_run()
   uint8_t status_error=0, status_detail=0;
   int16_t pwm = 0;
   float new_vel=0, new_pos = 0, sec_vel = 0, sec_pos = 0;
-  c_io_herkulex_set_torque(servo_id, pwm);
+  c_io_herkulex_set_torque(servo_id1, pwm);
   //c_common_utils_delayms(100);
   int32_t data_counter=0;
   int32_t queue_data_counter = 0;
   int32_t lost_data_counter = 0;
   uint8_t data_received = 0;
-  c_io_herkulex_set_goal_position(servo_id,0);
+  c_io_herkulex_set_goal_position(servo_id1,0);
 
-  c_io_herkulex_read_data(servo_id);
-  float initial_position = c_io_herkulex_get_position(servo_id);
+  c_io_herkulex_read_data(servo_id1);
+  float initial_position = c_io_herkulex_get_position(servo_id1);
 
   float ref_pos = initial_position + 5*PI/180;
   portBASE_TYPE xStatus;
@@ -186,95 +188,95 @@ void module_co_run()
 	/**
 	 * Leitura de dados
 	 */
-	 if(iInputData.receiverOutput.joystick[0]<2 && iInputData.receiverOutput.joystick[0]>-2)
-	 {
-		 c_io_herkulex_set_torque(servo_id1, iInputData.receiverOutput.joystick[0]);
-		 c_io_herkulex_set_torque(servo_id2, iInputData.receiverOutput.joystick[0]);
-	 }
-	#if !SERVO_IN_TEST
-			if (c_io_herkulex_read_data(servo_id))
-			{
-				new_vel = c_io_herkulex_get_velocity(servo_id);
-				oControlOutputData.vantBehavior.rpy[0]= new_vel;
-				new_pos = c_io_herkulex_get_position(servo_id);
-				oControlOutputData.vantBehavior.rpy[1] = new_pos;
-				oControlOutputData.vantBehavior.rpy[3]=1;
-				data_counter++;
-				data_received=1;
-				status_error = c_io_herkulex_get_status_error();
-				status_detail = c_io_herkulex_get_status_detail();
-				if (status_error) {
-					c_io_herkulex_clear(servo_id);
-				}
-			} else
-			{
-				data_received = 0;
-				oServoMsg.angularSpeed=0;
-				oServoMsg.position=0;
-				oServoMsg.heartBeat=heartBeat;
-				oServoMsg.pwm=0;
-				oServoMsg.status=0;
-			}
+//	 if(iInputData.receiverOutput.joystick[0]<2 && iInputData.receiverOutput.joystick[0]>-2)
+//	 {
+//		 c_io_herkulex_set_torque(servo_id1, iInputData.receiverOutput.joystick[0]);
+//		 c_io_herkulex_set_torque(servo_id2, iInputData.receiverOutput.joystick[0]);
+//	 }
+//	#if !SERVO_IN_TEST
+//			if (c_io_herkulex_read_data(servo_id))
+//			{
+//				new_vel = c_io_herkulex_get_velocity(servo_id);
+//				oControlOutputData.vantBehavior.rpy[0]= new_vel;
+//				new_pos = c_io_herkulex_get_position(servo_id);
+//				oControlOutputData.vantBehavior.rpy[1] = new_pos;
+//				oControlOutputData.vantBehavior.rpy[3]=1;
+//				data_counter++;
+//				data_received=1;
+//				status_error = c_io_herkulex_get_status_error();
+//				status_detail = c_io_herkulex_get_status_detail();
+//				if (status_error) {
+//					c_io_herkulex_clear(servo_id);
+//				}
+//			} else
+//			{
+//				data_received = 0;
+//				oServoMsg.angularSpeed=0;
+//				oServoMsg.position=0;
+//				oServoMsg.heartBeat=heartBeat;
+//				oServoMsg.pwm=0;
+//				oServoMsg.status=0;
+//			}
 
-
-
-
-
-	#endif
-			//pwm=200;
-
-	#if !SERVO_IN_TEST
-
-			/**
-			 * Envio dos dados para o modulo de comunicação
-			 * Verificação da integridade dos pacotes recebidos
-			 */
-			status = c_io_herkulex_get_status();//indica erros de comunicação
-
-			if (status)
-			{
-				oServoMsg.pwm=pwm;
-				oServoMsg.heartBeat=heartBeat;
-				xStatus = xQueueSend(pv_interface_servo.oServoOutput,
-						&oServoMsg,1/portTICK_RATE_MS);
-				if (!xStatus) xQueueSend(pv_interface_servo.oServoOutput,
-						&oServoMsg,1/portTICK_RATE_MS);
-
-				queue_data_counter++;
-			} else
-			{
-				c_io_herkulex_stat(servo_id);
-				status_error=c_io_herkulex_get_status_error();
-				status_detail=c_io_herkulex_get_status_detail();
-				if (status_error!=0 || status_detail!= 0)
-				{
-					c_io_herkulex_clear(servo_id);
-				}
-				lost_data_counter++;
-			}
-
-
-			/**
-			 * Para utilização em testes finitos dos servos.
-			 * O tamanho da fila(xQueue) indica o numero de pontos acumulados
-			 */
-			//c_common_utils_delayms(1);=1000
-			uint16_t queue_size = uxQueueMessagesWaiting(
-					pv_interface_servo.oServoOutput);
-			if (queue_size<QUEUE_SIZE)
-			{
-	#endif
-				lastWakeTime=wakeTime;
-				vTaskDelayUntil( &lastWakeTime, (MODULE_PERIOD / portTICK_RATE_MS));
-	#if !SERVO_IN_TEST
-			} else
-			{
-				break;
-			}
-	#endif
-		}
-		c_io_herkulex_set_torque(servo_id, 0);
-		c_io_herkulex_set_torque_control(servo_id,TORQUE_BREAK);//set torque free
+//
+//
+//
+//
+//	#endif
+//			//pwm=200;
+//
+//	#if !SERVO_IN_TEST
+//
+//			/**
+//			 * Envio dos dados para o modulo de comunicação
+//			 * Verificação da integridade dos pacotes recebidos
+//			 */
+//			status = c_io_herkulex_get_status();//indica erros de comunicação
+//
+//			if (status)
+//			{
+//				oServoMsg.pwm=pwm;
+//				oServoMsg.heartBeat=heartBeat;
+//				xStatus = xQueueSend(pv_interface_servo.oServoOutput,
+//						&oServoMsg,1/portTICK_RATE_MS);
+//				if (!xStatus) xQueueSend(pv_interface_servo.oServoOutput,
+//						&oServoMsg,1/portTICK_RATE_MS);
+//
+//				queue_data_counter++;
+//			} else
+//			{
+//				c_io_herkulex_stat(servo_id);
+//				status_error=c_io_herkulex_get_status_error();
+//				status_detail=c_io_herkulex_get_status_detail();
+//				if (status_error!=0 || status_detail!= 0)
+//				{
+//					c_io_herkulex_clear(servo_id);
+//				}
+//				lost_data_counter++;
+//			}
+//
+//
+//			/**
+//			 * Para utilização em testes finitos dos servos.
+//			 * O tamanho da fila(xQueue) indica o numero de pontos acumulados
+//			 */
+//			//c_common_utils_delayms(1);=1000
+//			uint16_t queue_size = uxQueueMessagesWaiting(
+//					pv_interface_servo.oServoOutput);
+//			if (queue_size<QUEUE_SIZE)
+//			{
+//	#endif
+//				lastWakeTime=wakeTime;
+//				vTaskDelayUntil( &lastWakeTime, (MODULE_PERIOD / portTICK_RATE_MS));
+//	#if !SERVO_IN_TEST
+//			} else
+//			{
+//				break;
+//			}
+//	#endif
+//		}
+//		c_io_herkulex_set_torque(servo_id, 0);
+//		c_io_herkulex_set_torque_control(servo_id,TORQUE_BREAK);//set torque free
 //	if (iInputData.securityStop){
 //		c_io_rx24f_move(1, 130+0);
 //		c_io_rx24f_move(2, 150+0);
@@ -293,30 +295,30 @@ void module_co_run()
 //		}
 //	}
 
-	/* Escrita dos esc */
-	unsigned char sp_right;
-	unsigned char sp_left;
-	sp_right = setPointESC_Forca(iActuation.escRightSpeed);
-	sp_left = setPointESC_Forca(iActuation.escLeftSpeed );
-
-	if (iInputData.securityStop){
-		c_io_blctrl_setSpeed(1, 0 );//sp_right
-		c_common_utils_delayus(10);
-		c_io_blctrl_setSpeed(0, 0 );//sp_left
-	}
-	else{
-		//inicializacao
-		if (iInputData.init){
-			c_io_blctrl_setSpeed(1, ESC_MINIMUM_VELOCITY );
-			c_common_utils_delayus(10);
-			c_io_blctrl_setSpeed(0, ESC_MINIMUM_VELOCITY );
-		}
-		else{
-			c_io_blctrl_setSpeed(1, sp_right );//sp_right
-			c_common_utils_delayus(10);
-			c_io_blctrl_setSpeed(0, sp_left );//sp_left
-		}
-	}
+//	/* Escrita dos esc */
+//	unsigned char sp_right;
+//	unsigned char sp_left;
+//	sp_right = setPointESC_Forca(iActuation.escRightSpeed);
+//	sp_left = setPointESC_Forca(iActuation.escLeftSpeed );
+//
+//	if (iInputData.securityStop){
+//		c_io_blctrl_setSpeed(1, 0 );//sp_right
+//		c_common_utils_delayus(10);
+//		c_io_blctrl_setSpeed(0, 0 );//sp_left
+//	}
+//	else{
+//		//inicializacao
+//		if (iInputData.init){
+//			c_io_blctrl_setSpeed(1, ESC_MINIMUM_VELOCITY );
+//			c_common_utils_delayus(10);
+//			c_io_blctrl_setSpeed(0, ESC_MINIMUM_VELOCITY );
+//		}
+//		else{
+//			c_io_blctrl_setSpeed(1, sp_right );//sp_right
+//			c_common_utils_delayus(10);
+//			c_io_blctrl_setSpeed(0, sp_left );//sp_left
+//		}
+//	}
 
 
     oControlOutputData.actuation.servoRight = c_io_blctrl_readVoltage(1);
