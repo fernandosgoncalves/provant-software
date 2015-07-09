@@ -140,7 +140,7 @@ void module_in_run()
     		oInputData.init = 0; //Sai da fase de inicializacao
 
     /* toggle pin for debug */
-    //c_common_gpio_toggle(LED_builtin_io);
+    c_common_gpio_toggle(LED_builtin_io);
 
     /* Leitura do numero de ciclos atuais */
 	lastWakeTime = xTaskGetTickCount();

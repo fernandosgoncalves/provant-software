@@ -38,7 +38,7 @@ char DATA[100];
 int32_t size;// = sizeof(pv_msg_esc);
 uint8_t servo_id1;
 uint8_t servo_id2;
-//GPIOPin debugPin;
+GPIOPin LED_builtin_io;
 /* Inboxes buffers */
 pv_type_actuation    iActuation;
 /* Outboxes buffers*/
@@ -124,8 +124,8 @@ void module_co_init()
 
 
   /* Pin for debug */
-  //debugPin = c_common_gpio_init(GPIOE, GPIO_Pin_13, GPIO_Mode_OUT);
-
+  LED_builtin_io = c_common_gpio_init(GPIOD, GPIO_Pin_15, GPIO_Mode_OUT);
+  c_common_gpio_toggle( LED_builtin_io);
   pv_interface_co.iInputData          = xQueueCreate(1, sizeof(pv_msg_input));
   pv_interface_co.oControlOutputData  = xQueueCreate(1, sizeof(pv_msg_controlOutput));
 }
@@ -151,6 +151,7 @@ void module_co_run()
 
   /* Inicializa os dados da atuação*/
   uint8_t status = 0;
+  float torque=0;
   int st =0, el=0;
   uint8_t status_error=0, status_detail=0;
   int16_t pwm = 0;
@@ -188,34 +189,35 @@ void module_co_run()
 	/**
 	 * Leitura de dados
 	 */
-//	 if(iInputData.receiverOutput.joystick[0]<2 && iInputData.receiverOutput.joystick[0]>-2)
-//	 {
-//		 c_io_herkulex_set_torque(servo_id1, iInputData.receiverOutput.joystick[0]);
+//
+		if (iInputData.init)
+			c_io_herkulex_set_torque(servo_id1,0);
+		else
+			torque=((float)iInputData.receiverOutput.joystick[1]/100)*1000;
+			oControlOutputData.vantBehavior.rpy[1]= torque;
+			if(torque<1000 && torque>-1000)
+			{
+				c_io_herkulex_set_torque(servo_id1,torque);
+			}
 //		 c_io_herkulex_set_torque(servo_id2, iInputData.receiverOutput.joystick[0]);
 //	 }
-//	#if !SERVO_IN_TEST
-//			if (c_io_herkulex_read_data(servo_id))
+//			if (c_io_herkulex_read_data(servo_id1))
 //			{
-//				new_vel = c_io_herkulex_get_velocity(servo_id);
+//				new_vel = c_io_herkulex_get_velocity(servo_id1);
 //				oControlOutputData.vantBehavior.rpy[0]= new_vel;
-//				new_pos = c_io_herkulex_get_position(servo_id);
+//				new_pos = c_io_herkulex_get_position(servo_id1);
 //				oControlOutputData.vantBehavior.rpy[1] = new_pos;
-//				oControlOutputData.vantBehavior.rpy[3]=1;
-//				data_counter++;
-//				data_received=1;
 //				status_error = c_io_herkulex_get_status_error();
+//				oControlOutputData.vantBehavior.rpy[2]=status_error;
 //				status_detail = c_io_herkulex_get_status_detail();
 //				if (status_error) {
-//					c_io_herkulex_clear(servo_id);
+//					c_io_herkulex_clear(servo_id1);
 //				}
 //			} else
 //			{
 //				data_received = 0;
-//				oServoMsg.angularSpeed=0;
-//				oServoMsg.position=0;
-//				oServoMsg.heartBeat=heartBeat;
-//				oServoMsg.pwm=0;
-//				oServoMsg.status=0;
+//				oControlOutputData.vantBehavior.rpy[0]=-100;
+//				oControlOutputData.vantBehavior.rpy[1] = -100;
 //			}
 
 //
@@ -321,28 +323,11 @@ void module_co_run()
 //	}
 
 
-    oControlOutputData.actuation.servoRight = c_io_blctrl_readVoltage(1);
-    oControlOutputData.actuation.servoLeft = c_io_blctrl_readSpeed(1);
-    oControlOutputData.actuation.escRightSpeed    = 13.3;
-    oControlOutputData.actuation.escLeftSpeed    = 13.4;
-    oControlOutputData.vantBehavior.rpy[0]        = 7.1;
-    oControlOutputData.vantBehavior.rpy[1]        = 7.2;
-    oControlOutputData.vantBehavior.rpy[2]        = 7.3;
-    oControlOutputData.vantBehavior.drpy[0]       = 8.1;
-    oControlOutputData.vantBehavior.drpy[1]       = 8.2;
-    oControlOutputData.vantBehavior.drpy[2]       = 8.3;
-    oControlOutputData.vantBehavior.xyz[0]        = 3.1;
-    oControlOutputData.vantBehavior.xyz[1]        = 3.2;
-    oControlOutputData.vantBehavior.xyz[2]        = 3.3;
-    oControlOutputData.vantBehavior.dxyz[0]       = 4.1;
-    oControlOutputData.vantBehavior.dxyz[1]       = 4.2;
-    oControlOutputData.vantBehavior.dxyz[2]       = 4.3;
-    oControlOutputData.heartBeat                  = heartBeat;
     unsigned int timeNow=xTaskGetTickCount();
     oControlOutputData.cicleTime                  = timeNow - lastWakeTime;
 
     /* toggle pin for debug */
-    //c_common_gpio_toggle(debugPin);
+    c_common_gpio_toggle( LED_builtin_io);
 
     if(pv_interface_co.oControlOutputData != 0)
       xQueueOverwrite(pv_interface_co.oControlOutputData, &oControlOutputData);

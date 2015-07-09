@@ -81,7 +81,7 @@ void module_do_run()
 		c_common_datapr_multwii_attitude(iInputData.attitude.roll*RAD_TO_DEG,iInputData.attitude.pitch*RAD_TO_DEG,iInputData.attitude.yaw*RAD_TO_DEG);
 		//c_common_datapr_multwii2_rcNormalize(channel);
 		c_common_datapr_multwii_altitude(iInputData.position.z*100,iInputData.position_refrence.refz*100);
-		c_common_datapr_multwii_debug(iInputData.attitude_reference.refroll*100,iInputData.attitude_reference.refpitch*100,iInputData.init,iInputData.securityStop);
+		c_common_datapr_multwii_debug(iControlOutputData.vantBehavior.rpy[0],iControlOutputData.vantBehavior.rpy[1],iControlOutputData.vantBehavior.rpy[2],0);
 		c_common_datapr_multwii_sendstack(USART2);
   
 		//c_common_datapr_multwii2_sendControldatain(iControlOutputData.vantBehavior.rpy, iControlOutputData.vantBehavior.drpy, iControlOutputData.vantBehavior.xyz, iControlOutputData.vantBehavior.dxyz);

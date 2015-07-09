@@ -447,7 +447,7 @@ void c_common_usart_flush(USART_TypeDef* USARTx)
   */
 void USART1_IRQHandler(void){
 	// check if the USART1 receive interrupt flag was set
-	if( USART_GetITStatus(USART2, USART_IT_RXNE) ){
+	if( USART_GetITStatus(USART1, USART_IT_RXNE) ){
 		usart1_available_flag = 1;
 		usart1_recv_buffer[usart1_rb_in] = USART_ReceiveData(USART1);
 		if(usart1_rb_in < RECV_BUFFER_SIZE-1) usart1_rb_in++;
