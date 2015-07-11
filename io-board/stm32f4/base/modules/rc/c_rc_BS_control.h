@@ -29,9 +29,9 @@
 void c_rc_BS_control_init();
 //backstepping attitude and height(AH) controller. Height control depends on global variable manual_height_control.
 pv_type_actuation c_rc_BS_AH_controller(pv_type_datapr_attitude attitude,
-				  pv_type_datapr_attitude_refrence attitude_reference,
+				  pv_type_datapr_attitude attitude_reference,
 				  pv_type_datapr_position position,
-				  pv_type_datapr_position_reference position_reference,
+				  pv_type_datapr_position position_reference,
 				  float throttle_control,
 				  bool manual_height_control,
 				  bool enable_integration);

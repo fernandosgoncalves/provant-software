@@ -103,6 +103,9 @@
 #define ROLLBACK 0x08
 #define REBOOT 0x09
 
+//Address of registers in EEP
+#define EEP_SERVO_ID 6
+
 //ack responses
 #define ACK_RAM_WRITE 0x43
 #define ACK_RAM_READ 0x44

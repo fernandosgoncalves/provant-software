@@ -49,7 +49,7 @@
 #include "c_common_gpio.h"
 #include "c_io_blctrl.h"
 #include "c_io_sonar.h"
-#include "c_io_rx24f.h"
+#include "c_io_herkulex.h"
 
 /** @addtogroup ProVANT_Modules
   * \brief Ponto de entrada do software geral do VANT.

@@ -63,7 +63,7 @@
 
  /* proVANT includes */
 #include "c_io_blctrl.h"
-#include "c_io_rx24f.h" // Depois serao trocado pelo servo novo
+#include "c_io_herkulex.h"
 #include "c_io_imu.h"
 #include "c_io_sonar.h"
 #include "c_rc_receiver.h"
@@ -79,11 +79,11 @@
 /* Exported types ------------------------------------------------------------*/
 struct pv_interface_in
 {
-  xQueueHandle oInputData;  
+  xQueueHandle oInputData;
+  xQueueHandle iControlOutputData;
 } pv_interface_in;
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
-
 /* Exported functions ------------------------------------------------------- */
 void module_in_init();
 void module_in_run();

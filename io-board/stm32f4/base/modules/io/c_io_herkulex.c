@@ -247,15 +247,35 @@ uint8_t receive() {// precisa de um timeout
 	int i=0;
 	uint8_t lastByte = 0, inByte = 0, ok=0, size = 30;
 	long now = c_common_utils_millis();
-	long timeOut = now + 10;
+	long timeOut = now + 1;
 	//while(c_common_usart_read(usartx)!=0xFF);
 	//if (c_common_usart_read(usartx) != 0xFF) return 0;
 	//BUFFER[0]=0xFF;
 	//BUFFER[1]=0xFF;
 	//i=2;
-	while (now<=timeOut && i<size) {
-		//verifica quando o primeiro byte chegou
-		while (!c_common_usart_available(usartx) && now<=timeOut) now=c_common_utils_millis();
+	/////////////////////////////////
+//	while (now<=timeOut && i<size) {
+//		//verifica quando o primeiro byte chegou
+//		while (!c_common_usart_available(usartx) && now<=timeOut)
+//			now=c_common_utils_millis();
+//		lastByte=inByte;
+//		inByte = c_common_usart_read(usartx);
+//		if (!ok && inByte == 0xFF && lastByte == 0xFF ) {
+//			BUFFER[0]=0xFF;
+//			i=1;
+//			ok=1;
+//		}
+//		if (ok) {
+//			BUFFER[i] = inByte;
+//			if (i==2) size=BUFFER[2];
+//			i++;
+//		}
+//	}
+	//////////////////////////////////
+	//verifica quando o primeiro byte chegou
+	while (!c_common_usart_available(usartx) && now<=timeOut)
+		now=c_common_utils_millis();
+	while (c_common_usart_available(usartx) && i<size) {
 		lastByte=inByte;
 		inByte = c_common_usart_read(usartx);
 		if (!ok && inByte == 0xFF && lastByte == 0xFF ) {
@@ -266,14 +286,16 @@ uint8_t receive() {// precisa de um timeout
 		if (ok) {
 			BUFFER[i] = inByte;
 			if (i==2) size=BUFFER[2];
-			i++;
+				i++;
 		}
 	}
+
 	if (now>=timeOut) {
 		return 0;
 	} else {
 		return 1;
 	}
+	c_common_usart_flush(usartx);
 
 }
 
@@ -315,6 +337,7 @@ void c_io_herkulex_ijog() {
 }
 
 void c_io_herkulex_sjog(char psize, char servo_id, uint16_t data, char stop, char mode, char led, char ptime) {
+	pid=servo_id;
 	size=psize;
 	cmd=S_JOG;
 	jog_packet.iJogData= data;

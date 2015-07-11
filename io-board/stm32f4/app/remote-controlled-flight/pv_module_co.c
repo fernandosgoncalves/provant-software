@@ -26,18 +26,12 @@
 #define MODULE_PERIOD	 5//ms
 #define ESC_ON           1
 #define SERVO_ON         1
-#define USART_BAUDRATE     115200
-#define QUEUE_SIZE 500
-USART_TypeDef *USARTn = USART1;
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 portTickType lastWakeTime;
 pv_msg_input iInputData;
 pv_msg_controlOutput oControlOutputData;
-char DATA[100];
 int32_t size;// = sizeof(pv_msg_esc);
-uint8_t servo_id1;
-uint8_t servo_id2;
 GPIOPin LED_builtin_io;
 /* Inboxes buffers */
 pv_type_actuation    iActuation;
@@ -68,57 +62,6 @@ void module_co_init()
 //  c_common_i2c_init(I2C3);
 //  c_io_blctrl_init_i2c(I2C3);
 
-  /* Inicializar os servos */
-  servo_id1=253;
-  servo_id2=150;
-  /* Inicia a usart */
-  c_io_herkulex_init(USARTn,USART_BAUDRATE);
-  //c_common_utils_delayms(12);
-  c_io_herkulex_clear(servo_id1);
-  //c_common_utils_delayms(12);
-  c_io_herkulex_reboot(servo_id1);
-  c_common_utils_delayms(1000);
-  c_io_herkulex_set_torque_control(servo_id1,TORQUE_FREE);//torque free
-
-  DATA[0]=1;
-  //only reply to read commands
-  c_io_herkulex_config_ack_policy(servo_id1,1);
-
-  //Acceleration Ratio = 0
-  DATA[0]=0;
-  c_io_herkulex_write(RAM,servo_id1,REG_ACC_RATIO,1,DATA);
-
-  //set no acceleration time
-  DATA[0]=0;
-  c_io_herkulex_write(RAM,servo_id1,REG_MAX_ACC_TIME,1,DATA);
-
-  DATA[0]=0;
-  c_io_herkulex_write(RAM,servo_id1,REG_PWM_OFFSET,1,DATA);
-
-  //min pwm = 0
-  DATA[0]=0;
-  c_io_herkulex_write(RAM,servo_id1,REG_MIN_PWM,1,DATA);
-
-  //max pwm >1023 -> no max pwm
-  DATA[1]=0x03;//little endian 0x03FF sent
-  DATA[0]=0xFF;
-  c_io_herkulex_write(RAM,servo_id1,REG_MAX_PWM,2,DATA);
-
-  //0x7FFE max. pwm
-  DATA[1]=0x03;//little endian
-  DATA[0]=0xFF;//maximo em 1023
-  c_io_herkulex_write(RAM,servo_id1,REG_MAX_PWM,2,DATA);
-
-  /** set overload pwm register, if overload_pwm>1023, overload is never
-   * activated this is good for data acquisition, but may not be the case for
-   * the tilt-rotor actualy flying.
-   */
-  DATA[0]=0xFF;
-  DATA[1]=0x03;//little endian, 2048 sent
-  c_io_herkulex_write(RAM,servo_id1,REG_OVERLOAD_PWM_THRESHOLD,1,DATA);
-
-  c_io_herkulex_set_torque_control(servo_id1,TORQUE_ON);//set torque on
-  c_common_utils_delayms(50);
 
   /*Inicializar o tipo de controlador*/
 
@@ -143,6 +86,9 @@ void module_co_init()
 void module_co_run() 
 {
   unsigned int heartBeat=0;
+  /* Passa os valores davariavel compartilha para a variavel iInputData */
+  xQueueReceive(pv_interface_co.iInputData, &iInputData, 0);
+
   /* Inicializa os dados da atuação*/
   oControlOutputData.actuation.servoRight = 0;
   oControlOutputData.actuation.servoLeft  = 0;
@@ -153,28 +99,25 @@ void module_co_run()
   uint8_t status = 0;
   float torque=0;
   int st =0, el=0;
-  uint8_t status_error=0, status_detail=0;
-  int16_t pwm = 0;
-  float new_vel=0, new_pos = 0, sec_vel = 0, sec_pos = 0;
-  c_io_herkulex_set_torque(servo_id1, pwm);
+  //c_io_herkulex_set_torque(servo_id1, pwm);
   //c_common_utils_delayms(100);
   int32_t data_counter=0;
   int32_t queue_data_counter = 0;
   int32_t lost_data_counter = 0;
   uint8_t data_received = 0;
-  c_io_herkulex_set_goal_position(servo_id1,0);
 
-  c_io_herkulex_read_data(servo_id1);
-  float initial_position = c_io_herkulex_get_position(servo_id1);
 
-  float ref_pos = initial_position + 5*PI/180;
-  portBASE_TYPE xStatus;
-  c_common_utils_delayms(1);
+//  c_io_herkulex_read_data(servo_id1);
+//  float initial_position = c_io_herkulex_get_position(servo_id1);
+//
+//  float ref_pos = initial_position + 5*PI/180;
+//  portBASE_TYPE xStatus;
+//  c_common_utils_delayms(1);
 
   while(1) 
   {
-	  /* Variavel para debug */
-	  heartBeat+=1;
+	 /* Variavel para debug */
+	 heartBeat+=1;
 
 	/* Passa os valores davariavel compartilha para a variavel iInputData */
     xQueueReceive(pv_interface_co.iInputData, &iInputData, 0);
@@ -184,41 +127,18 @@ void module_co_run()
 
 	/*-------------------Calculo do controle------------------------------*/
 
-	/*-------------------Escrita dos servos-------------------------------*/
 
-	/**
+	/*-------------------Escrita dos servos-------------------------------*/
+	oControlOutputData.actuation.servoRight=((float)iInputData.receiverOutput.joystick[1]/100)*1000;
+	oControlOutputData.actuation.servoLeft=oControlOutputData.actuation.servoRight;
+		/**
 	 * Leitura de dados
 	 */
-//
-		if (iInputData.init)
-			c_io_herkulex_set_torque(servo_id1,0);
-		else
-			torque=((float)iInputData.receiverOutput.joystick[1]/100)*1000;
-			oControlOutputData.vantBehavior.rpy[1]= torque;
-			if(torque<1000 && torque>-1000)
-			{
-				c_io_herkulex_set_torque(servo_id1,torque);
-			}
-//		 c_io_herkulex_set_torque(servo_id2, iInputData.receiverOutput.joystick[0]);
-//	 }
-//			if (c_io_herkulex_read_data(servo_id1))
-//			{
-//				new_vel = c_io_herkulex_get_velocity(servo_id1);
-//				oControlOutputData.vantBehavior.rpy[0]= new_vel;
-//				new_pos = c_io_herkulex_get_position(servo_id1);
-//				oControlOutputData.vantBehavior.rpy[1] = new_pos;
-//				status_error = c_io_herkulex_get_status_error();
-//				oControlOutputData.vantBehavior.rpy[2]=status_error;
-//				status_detail = c_io_herkulex_get_status_detail();
-//				if (status_error) {
-//					c_io_herkulex_clear(servo_id1);
-//				}
-//			} else
-//			{
-//				data_received = 0;
-//				oControlOutputData.vantBehavior.rpy[0]=-100;
-//				oControlOutputData.vantBehavior.rpy[1] = -100;
-//			}
+
+
+
+
+
 
 //
 //

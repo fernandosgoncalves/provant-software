@@ -66,7 +66,7 @@ pv_type_stability_error BS_AH_last_error={0};
 /* Private function prototypes -----------------------------------------------*/
 float32_t c_rc_BS_AH_altitude_controller_step(float altitude, float altitude_reference, float rateOfClimb, float rateOfClimb_reference,
 									pv_type_datapr_attitude attitude);
-arm_matrix_instance_f32 c_rc_BS_AH_PD_gains_step(pv_type_datapr_attitude attitude, pv_type_datapr_attitude_refrence attitude_reference, bool enable_integrators);
+arm_matrix_instance_f32 c_rc_BS_AH_PD_gains_step(pv_type_datapr_attitude attitude, pv_type_datapr_attitude attitude_reference, bool enable_integrators);
 arm_matrix_instance_f32 c_rc_BS_AH_torque_calculation_step(pv_type_datapr_attitude attitude, arm_matrix_instance_f32 gamma);
 pv_type_actuation c_rc_BS_AH_actuators_signals_step(arm_matrix_instance_f32 tau, float Fzb);
 arm_matrix_instance_f32 c_rc_BS_AH_inertia_matrix(pv_type_datapr_attitude attitude);
@@ -130,13 +130,13 @@ void c_rc_BS_AH_integrate_error(pv_type_stability_error error, float sample_time
 	#endif
 }
 
-arm_matrix_instance_f32 c_rc_BS_AH_PD_gains_step(pv_type_datapr_attitude attitude, pv_type_datapr_attitude_refrence attitude_reference, bool enable_integrators){
+arm_matrix_instance_f32 c_rc_BS_AH_PD_gains_step(pv_type_datapr_attitude attitude, pv_type_datapr_attitude attitude_reference, bool enable_integrators){
 	arm_matrix_instance_f32 gamma;
 	pv_type_stability_error current_error={0};
 
-	current_error.roll = attitude.roll - attitude_reference.refroll;
-	current_error.pitch = attitude.pitch - attitude_reference.refpitch;
-	current_error.yaw = attitude.yaw - attitude_reference.refyaw;
+	current_error.roll = attitude.roll - attitude_reference.roll;
+	current_error.pitch = attitude.pitch - attitude_reference.pitch;
+	current_error.yaw = attitude.yaw - attitude_reference.yaw;
 
 	/* Integra o erro, utiliza as variaveis globais:
 	 * BS_AH_integrated_error;
@@ -153,17 +153,17 @@ arm_matrix_instance_f32 c_rc_BS_AH_PD_gains_step(pv_type_datapr_attitude attitud
 	}
 
 	//gamma1
-	gamma_f32[0] = -KPPHI * (attitude.roll - attitude_reference.refroll)
-						- KVPHI * (attitude.dotRoll - attitude_reference.refdotRoll)
+	gamma_f32[0] = -KPPHI * (attitude.roll - attitude_reference.roll)
+						- KVPHI * (attitude.dotRoll - attitude_reference.dotRoll)
 						- KIPHI * BS_AH_integrated_error.roll;
 	//gamma2
-	gamma_f32[1] = -KPTHETA * (attitude.pitch - attitude_reference.refpitch)
-						- KVTHETA * (attitude.dotPitch - attitude_reference.refdotPitch)
+	gamma_f32[1] = -KPTHETA * (attitude.pitch - attitude_reference.pitch)
+						- KVTHETA * (attitude.dotPitch - attitude_reference.dotPitch)
 						- KITHETA * BS_AH_integrated_error.pitch;
 
 	//gamma3
-	gamma_f32[2] = -KPPSI * (attitude.yaw - attitude_reference.refyaw)
-						- KVPSI * (attitude.dotYaw - attitude_reference.refdotYaw)
+	gamma_f32[2] = -KPPSI * (attitude.yaw - attitude_reference.yaw)
+						- KVPSI * (attitude.dotYaw - attitude_reference.dotYaw)
 						- KIPSI * BS_AH_integrated_error.yaw;
 
 	arm_mat_init_f32(&gamma, 3, 1, (float32_t *)gamma_f32);
@@ -312,9 +312,9 @@ void c_rc_BS_control_init() {
  * The struct pv_msg_io_attitude includes the angular velocity.
  */
 pv_type_actuation c_rc_BS_AH_controller(pv_type_datapr_attitude attitude,
-		          pv_type_datapr_attitude_refrence attitude_reference,
+		          pv_type_datapr_attitude attitude_reference,
 		          pv_type_datapr_position position,
-		          pv_type_datapr_position_reference position_reference,
+		          pv_type_datapr_position position_reference,
 				  float throttle_control,
 				  bool manual_height_control,
 				  bool enable_integration)
@@ -334,7 +334,7 @@ pv_type_actuation c_rc_BS_AH_controller(pv_type_datapr_attitude attitude,
 		Fzb = c_rc_BS_AH_Fzb_RC(throttle_control);
 	else{
 		#ifdef ENABLE_RC_HEIGHT_REFERENCE
-			Fzb = c_rc_BS_AH_altitude_controller_step(position.z, throttle_control*HEIGHT_REFERENCE_MAX, position.dotZ, position_reference.refdotZ, attitude);
+			Fzb = c_rc_BS_AH_altitude_controller_step(position.z, throttle_control*HEIGHT_REFERENCE_MAX, position.dotZ, position_reference.dotZ, attitude);
 		#else
 			Fzb = c_rc_BS_AH_altitude_controller_step(position.z, position_reference.refz, position.dotZ, position_reference.refdotZ, attitude);
 		#endif
