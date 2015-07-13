@@ -309,130 +309,59 @@ void c_io_herkulex_clearError(int servoID)
 	sendData(dataEx, pSize);
 }
 
-// move all servo at the same time to a position: servo list building
-void c_io_herkulex_moveAll(int servoID, int Goal, int iLed)
-{
-	  if (Goal > 1023 || Goal < 0)
-		return;						 //0 <--> 1023 range
 
-	  int iMode=0;                   //mode=position
-	  int iStop=0;                   //stop=0
-
-
-	  // Position definition
-	  int posLSB=Goal & 0X00FF;					// MSB Pos
-	  int posMSB=(Goal & 0XFF00) >> 8;			// LSB Pos
-
-	  //led
-	  int iBlue=0;
-	  int iGreen=0;
-	  int iRed=0;
-	  switch (iLed) {
-	  case 1:
-		iGreen=1;
-		break;
-	  case 2:
-		iBlue=1;
-		break;
-	  case 3:
-		iRed=1;
-		break;
-	  }
-
-	  int SetValue=iStop+iMode*2+iGreen*4+iBlue*8+iRed*16;	//assign led value
-
-	  addData(posLSB, posMSB, SetValue, servoID);	//add servo data to list, pos mode
-}
-
-// move all servo at the same time to a position: servo list building
-void c_io_herkulex_moveAll(int servoID, float angle, int iLed)
-{
-		if (angle > 160.0|| angle < -160.0) return; // out of the range
-		int position = (int)((angle*180)/(0.325*PI)) + 512;
-		moveAll(servoID, position, iLed);
-}
-
-// move all servo at the same time with different speeds: servo list building
-void c_io_herkulex_moveSpeedAll(int servoID, int Goal, int iLed)
-{
-	  if (Goal > 1023 || Goal < -1023)
-		return;								 //-1023 <--> 1023 range
-
-	  int iMode=1;                  		// mode=continous rotation
-	  int iStop=0;                  		// Stop=0
-
-	  // Speed definition
-	  int GoalSpeedSign;
-	  if (Goal < 0) {
-		GoalSpeedSign = (-1)* Goal ;
-		GoalSpeedSign |= 0x4000;  //bit n\B014
-	  }
-	  else {
-		GoalSpeedSign = Goal;
-	  }
-
-	  int speedGoalLSB=GoalSpeedSign & 0X00FF; 	      		 // MSB speedGoal
-	  int speedGoalMSB=(GoalSpeedSign & 0xFF00) >> 8;        // LSB speedGoal
-
-	  //led
-	  int iBlue=0;
-	  int iGreen=0;
-	  int iRed=0;
-	  switch (iLed) {
-	  case 1:
-		iGreen=1;
-		break;
-	  case 2:
-		iBlue=1;
-		break;
-	  case 3:
-		iRed=1;
-		break;
-	  }
-
-	  int SetValue=iStop+iMode*2+iGreen*4+iBlue*8+iRed*16;	//assign led value
-
-	  addData(speedGoalLSB, speedGoalMSB, SetValue, servoID);		//add servo data to list, speed mode
-}
-
-
-
-// move all servo with the same execution time
-void c_io_herkulex_actionAll(int pTime)
-{
-	if ((pTime <0) || (pTime > 2856)) return;
-
-    pSize = 0x08 + conta;     	    // 3.Packet size 7-58
-	cmd   = S_JOG_REQ;		 			// 5. CMD SJOG Write n servo with same execution time
-	playTime=(int)((float)pTime/11.2);// 8. Execution time
-
-    pID=0xFE^playTime;
-    ck1=checksum1(moveData,conta);	//6. Checksum1
-	ck2=checksum2(ck1);				//7. Checksum2
-
-    pID=0xFE;
-	dataEx[0] = 0xFF;				// Packet Header
-	dataEx[1] = 0xFF;				// Packet Header
-	dataEx[2] = pSize;	 			// Packet Size
-	dataEx[3] = pID;				// Servo ID
-	dataEx[4] = cmd;				// Command Ram Write
-	dataEx[5] = ck1;				// Checksum 1
-	dataEx[6] = ck2;				// Checksum 2
-	dataEx[7] = playTime;			// Execution time
-
-	for (int i=0; i < conta; i++)
-		dataEx[i+8]=moveData[i];	// Variable servo data
-
-	sendData(dataEx, pSize);
-
-	conta=0; 						//reset counter
-
-}
 
 // get Position in rad
 float c_io_herkulex_getAngle(int servoID) {
-	int pos = (int)getPosition(servoID);
-	return (((float)pos* 0.325)-166.65)*PI/180;
+	int Position  = 0;
+
+    pSize = 0x09;               // 3.Packet size 7-58
+	pID   = servoID;     	    // 4. Servo ID - 253=all servos
+	cmd   = RAM_READ_REQ;           // 5. CMD
+	data[0]=0x3A;               // 8. Address
+	data[1]=0x02;               // 9. Lenght
+
+	lenghtString=2;             // lenghtData
+
+	ck1=checksum1(data,lenghtString);	//6. Checksum1
+	ck2=checksum2(ck1);					//7. Checksum2
+
+	dataEx[0] = 0xFF;			// Packet Header
+	dataEx[1] = 0xFF;			// Packet Header
+	dataEx[2] = pSize;	 		// Packet Size
+	dataEx[3] = pID;			// Servo ID
+	dataEx[4] = cmd;			// Command Ram Write
+	dataEx[5] = ck1;			// Checksum 1
+	dataEx[6] = ck2;			// Checksum 2
+	dataEx[7] = data[0];      	// Address
+	dataEx[8] = data[1]; 		// Length
+
+	sendData(dataEx, pSize);
+
+    delay(1);
+	readData(13);
+
+
+	pSize = dataEx[2];           // 3.Packet size 7-58
+	pID   = dataEx[3];           // 4. Servo ID
+	cmd   = dataEx[4];           // 5. CMD
+	data[0]=dataEx[7];
+    data[1]=dataEx[8];
+    data[2]=dataEx[9];
+    data[3]=dataEx[10];
+    data[4]=dataEx[11];
+    data[5]=dataEx[12];
+    lenghtString=6;
+
+    ck1=checksum1(data,lenghtString);	//6. Checksum1
+	ck2=checksum2(ck1);					//7. Checksum2
+
+    if (ck1 != dataEx[5]) return -1;
+	if (ck2 != dataEx[6]) return -1;
+
+	Position = ((dataEx[10]&0x03)<<8) | dataEx[9];
+
+	return (float)(Position-512)*(0.325*PI)/180;
 }
 // get Position in rad/seg
 float c_io_herkulex_getSpeed(int servoID){
@@ -489,12 +418,8 @@ void c_io_herkulex_setLed(int servoID, int valueLed)
 	sendData(dataEx, pSize);
 }
 
-
-
-
-
 // move one servo with continous rotation
-void c_io_herkulex_moveSpeedOne(int servoID, int Goal, int pTime, int iLed)
+void c_io_herkulex_setTorqueOne(int servoID, int Goal, int pTime, int iLed)
 {
   if (Goal > 1023 || Goal < -1023) return;              // speed (goal) non correct
   if ((pTime <0) || (pTime > 2856)) return;
@@ -564,73 +489,150 @@ void c_io_herkulex_moveSpeedOne(int servoID, int Goal, int pTime, int iLed)
 }
 
 // move one servo at goal position 0 - 1024
-void c_io_herkulex_moveOne(int servoID, int Goal, int pTime, int iLed)
+void c_io_herkulex_setAngleOne(int servoID, float angle, int pTime, int iLed)
 {
-  if (Goal > 1023 || Goal < 0) return;              // speed (goal) non correct
-  if ((pTime <0) || (pTime > 2856)) return;
+	if (angle > 160.0|| angle < -160.0)
+		return;
+	int Goal = (int)((angle*180)/(0.325*PI)) + 512;
 
-  // Position definition
-  int posLSB=Goal & 0X00FF;								// MSB Pos
-  int posMSB=(Goal & 0XFF00) >> 8;						// LSB Pos
+	if (Goal > 1023 || Goal < 0)
+		return;              // speed (goal) non correct
 
-  //led
-  int iBlue=0;
-  int iGreen=0;
-  int iRed=0;
-  switch (iLed) {
-  case 1:
-    iGreen=1;
-    break;
-  case 2:
-    iBlue=1;
-    break;
-  case 3:
-    iRed=1;
-    break;
-  }
-  int SetValue=iGreen*4+iBlue*8+iRed*16;	//assign led value
+	if ((pTime <0) || (pTime > 2856))
+		return;
 
-  playTime=(int)((float)pTime/11.2);			// 8. Execution time
+	// Position definition
+	int posLSB=Goal & 0X00FF;								// MSB Pos
+	int posMSB=(Goal & 0XFF00) >> 8;						// LSB Pos
 
-  pSize = 0x0C;          			    	// 3.Packet size 7-58
-  cmd   = S_JOG_REQ;              				// 5. CMD
+	//led
+	int iBlue=0;
+	int iGreen=0;
+	int iRed=0;
+	switch (iLed) {
+	case 1:
+		iGreen=1;
+		break;
+	case 2:
+		iBlue=1;
+		break;
+	case 3:
+		iRed=1;
+		break;
+	}
+	int SetValue=iGreen*4+iBlue*8+iRed*16;	//assign led value
 
-  data[0]=posLSB;               			// 8. speedLSB
-  data[1]=posMSB;               			// 9. speedMSB
-  data[2]=SetValue;                         // 10. Mode=0;
-  data[3]=servoID;                    		// 11. ServoID
+	playTime=(int)((float)pTime/11.2);		// 8. Execution time
 
-  pID=servoID^playTime;
+	pSize = 0x0C;          			    	// 3.Packet size 7-58
+	cmd   = S_JOG_REQ;              				// 5. CMD
 
-  lenghtString=4;             				// lenghtData
+	data[0]=posLSB;               			// 8. speedLSB
+	data[1]=posMSB;               			// 9. speedMSB
+	data[2]=SetValue;                       // 10. Mode=0;
+	data[3]=servoID;                    	// 11. ServoID
 
-  ck1=checksum1(data,lenghtString);			//6. Checksum1
-  ck2=checksum2(ck1);						//7. Checksum2
+	pID=servoID^playTime;
 
-  pID=servoID;
+	lenghtString=4;             			// lenghtData
 
-  dataEx[0] = 0xFF;				// Packet Header
-  dataEx[1] = 0xFF;				// Packet Header
-  dataEx[2] = pSize;	 		// Packet Size
-  dataEx[3] = pID;				// Servo ID
-  dataEx[4] = cmd;				// Command Ram Write
-  dataEx[5] = ck1;				// Checksum 1
-  dataEx[6] = ck2;				// Checksum 2
-  dataEx[7] = playTime;  		// Execution time
-  dataEx[8] = data[0];
-  dataEx[9] = data[1];
-  dataEx[10] = data[2];
-  dataEx[11] = data[3];
+	ck1=checksum1(data,lenghtString);		//6. Checksum1
+	ck2=checksum2(ck1);						//7. Checksum2
 
-  sendData(dataEx, pSize);
+	pID=servoID;
 
+	dataEx[0] = 0xFF;				// Packet Header
+	dataEx[1] = 0xFF;				// Packet Header
+	dataEx[2] = pSize;	 		    // Packet Size
+	dataEx[3] = pID;				// Servo ID
+	dataEx[4] = cmd;				// Command Ram Write
+	dataEx[5] = ck1;				// Checksum 1
+	dataEx[6] = ck2;				// Checksum 2
+	dataEx[7] = playTime;  		    // Execution time
+	dataEx[8] = data[0];
+	dataEx[9] = data[1];
+	dataEx[10] = data[2];
+	dataEx[11] = data[3];
+
+	sendData(dataEx, pSize);
 }
 
-// move one servo to an angle between -160 and 160
-void c_io_herkulex_moveOneAngle(int servoID, float angle, int pTime, int iLed) {
-	if (angle > 160.0|| angle < -160.0) return;
-	int position = (int)(angle/0.325) + 512;
-	moveOne(servoID, position, pTime, iLed);
+// move all servo at the same time to a position: servo list building
+void c_io_herkulex_setAngleAll(int servoID, float angle, int iLed)
+{
+	if (angle > 160.0|| angle < -160.0)
+		return; // out of the range
+	int Goal = (int)((angle*180)/(0.325*PI)) + 512;
+
+	int iMode=0;                   //mode=position
+	int iStop=0;                   //stop=0
+
+	// Position definition
+	int posLSB=Goal & 0X00FF;					// MSB Pos
+	int posMSB=(Goal & 0XFF00) >> 8;			// LSB Pos
+
+	//led
+	int iBlue=0;
+	int iGreen=0;
+	int iRed=0;
+	switch (iLed) {
+	case 1:
+		iGreen=1;
+		break;
+	case 2:
+		iBlue=1;
+		break;
+	case 3:
+		iRed=1;
+		break;
+	}
+
+	int SetValue=iStop+iMode*2+iGreen*4+iBlue*8+iRed*16;	//assign led value
+
+	addData(posLSB, posMSB, SetValue, servoID);	//add servo data to list, pos mode
+}
+
+// move all servo at the same time with different torques: servo list building
+void c_io_herkulex_setTorqueAll(int servoID, int Goal, int iLed)
+{
+	  if (Goal > 1023 || Goal < -1023)
+		return;								 //-1023 <--> 1023 range
+
+	  int iMode=1;                  		// mode=continous rotation
+	  int iStop=0;                  		// Stop=0
+
+	  // Speed definition
+	  int GoalSpeedSign;
+	  if (Goal < 0) {
+		GoalSpeedSign = (-1)* Goal ;
+		GoalSpeedSign |= 0x4000;  //bit n\B014
+	  }
+	  else {
+		GoalSpeedSign = Goal;
+	  }
+
+	  int speedGoalLSB=GoalSpeedSign & 0X00FF; 	      		 // MSB speedGoal
+	  int speedGoalMSB=(GoalSpeedSign & 0xFF00) >> 8;        // LSB speedGoal
+
+	  //led
+	  int iBlue=0;
+	  int iGreen=0;
+	  int iRed=0;
+	  switch (iLed) {
+	  case 1:
+		iGreen=1;
+		break;
+	  case 2:
+		iBlue=1;
+		break;
+	  case 3:
+		iRed=1;
+		break;
+	  }
+
+	  int SetValue=iStop+iMode*2+iGreen*4+iBlue*8+iRed*16;	//assign led value
+
+	  addData(speedGoalLSB, speedGoalMSB, SetValue, servoID);		//add servo data to list, speed mode
 }
 
 // write registry in the RAM: one byte
@@ -728,66 +730,19 @@ void sendData(uint8_t* buffer,int lenght) {
 }
 
 uint8_t readData(int lenght) {
-//	long now = c_common_utils_millis();
-//	long timeOut = now + 1;
+	long now = c_common_utils_us();
+	long timeOut = now + 100;
 //	//Time out para recever os dados
-//	while (!c_common_usart_available(USARTx) && now<timeOut)
-//			now=c_common_utils_millis();
-	for (int i=0;c_common_usart_available(USARTx)==1 && i<lenght;i++){
+	while (!c_common_usart_available(USARTx) && now<timeOut)
+			now=c_common_utils_millis();
+	for(int i=0;c_common_usart_available(USARTx)==1 && i<lenght;i++){
 			dataEx[i] = c_common_usart_read(USARTx);
 	}
 	c_common_utils_flush();
 }
 
 int getPosition(int servoID) {
-	int Position  = 0;
 
-    pSize = 0x09;               // 3.Packet size 7-58
-	pID   = servoID;     	    // 4. Servo ID - 253=all servos
-	cmd   = RAM_READ_REQ;           // 5. CMD
-	data[0]=0x3A;               // 8. Address
-	data[1]=0x02;               // 9. Lenght
-
-	lenghtString=2;             // lenghtData
-
-	ck1=checksum1(data,lenghtString);	//6. Checksum1
-	ck2=checksum2(ck1);					//7. Checksum2
-
-	dataEx[0] = 0xFF;			// Packet Header
-	dataEx[1] = 0xFF;			// Packet Header
-	dataEx[2] = pSize;	 		// Packet Size
-	dataEx[3] = pID;			// Servo ID
-	dataEx[4] = cmd;			// Command Ram Write
-	dataEx[5] = ck1;			// Checksum 1
-	dataEx[6] = ck2;			// Checksum 2
-	dataEx[7] = data[0];      	// Address
-	dataEx[8] = data[1]; 		// Length
-
-	sendData(dataEx, pSize);
-
-    delay(1);
-	readData(13);
-
-
-	pSize = dataEx[2];           // 3.Packet size 7-58
-	pID   = dataEx[3];           // 4. Servo ID
-	cmd   = dataEx[4];           // 5. CMD
-	data[0]=dataEx[7];
-    data[1]=dataEx[8];
-    data[2]=dataEx[9];
-    data[3]=dataEx[10];
-    data[4]=dataEx[11];
-    data[5]=dataEx[12];
-    lenghtString=6;
-
-    ck1=checksum1(data,lenghtString);	//6. Checksum1
-	ck2=checksum2(ck1);					//7. Checksum2
-
-    if (ck1 != dataEx[5]) return -1;
-	if (ck2 != dataEx[6]) return -1;
-
-	Position = ((dataEx[10]&0x03)<<8) | dataEx[9];
-    return Position;
 
 }
 
@@ -878,29 +833,31 @@ void moveAll(int servoID, int Goal, int iLed){
 	  addData(posLSB, posMSB, SetValue, servoID);	//add servo data to list, pos mode
 }
 
-if ((pTime <0) || (pTime > 2856)) return;
+void  c_io_herkulex_write_I_JOG(int pTime){
+	if ((pTime <0) || (pTime > 2856)) return;
 
-    pSize = 0x08 + conta;     	    // 3.Packet size 7-58
+    pSize = 0x08 + conta;     	        // 3.Packet size 7-58
 	cmd   = S_JOG_REQ;		 			// 5. CMD SJOG Write n servo with same execution time
-	playTime=(int)((float)pTime/11.2);// 8. Execution time
+	playTime=(int)((float)pTime/11.2);  // 8. Execution time
 
     pID=0xFE^playTime;
-    ck1=checksum1(moveData,conta);	//6. Checksum1
-	ck2=checksum2(ck1);				//7. Checksum2
+    ck1=checksum1(moveData,conta);	    //6. Checksum1
+	ck2=checksum2(ck1);				    //7. Checksum2
 
     pID=0xFE;
-	dataEx[0] = 0xFF;				// Packet Header
-	dataEx[1] = 0xFF;				// Packet Header
-	dataEx[2] = pSize;	 			// Packet Size
-	dataEx[3] = pID;				// Servo ID
-	dataEx[4] = cmd;				// Command Ram Write
-	dataEx[5] = ck1;				// Checksum 1
-	dataEx[6] = ck2;				// Checksum 2
-	dataEx[7] = playTime;			// Execution time
+	dataEx[0] = 0xFF;				    // Packet Header
+	dataEx[1] = 0xFF;				    // Packet Header
+	dataEx[2] = pSize;	 			    // Packet Size
+	dataEx[3] = pID;				    // Servo ID
+	dataEx[4] = cmd;				    // Command Ram Write
+	dataEx[5] = ck1;				    // Checksum 1
+	dataEx[6] = ck2;				    // Checksum 2
+	dataEx[7] = playTime;			    // Execution time
 
 	for (int i=0; i < conta; i++)
-		dataEx[i+8]=moveData[i];	// Variable servo data
+		dataEx[i+8]=moveData[i];	    // Variable servo data
 
 	sendData(dataEx, pSize);
 
-	conta=0; 						//reset counter
+	conta=0; 						    //reset counter
+}

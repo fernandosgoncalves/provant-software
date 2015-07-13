@@ -104,7 +104,7 @@ void c_io_imu_init(I2C_TypeDef* I2Cx)
 
   // Accelerometer increase G-range
   //0x0B -> (+/- 16G)
-  //8    -> (+/- 2G)
+  //8    -> (+/- 2G)B
   //9    -> (+/- 4G)
   c_common_i2c_writeByte(I2Cx_imu, ACCL_ADDR, 0x31, 9);
 
