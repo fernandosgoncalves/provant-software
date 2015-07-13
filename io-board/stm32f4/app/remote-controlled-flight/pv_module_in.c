@@ -25,7 +25,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define MODULE_PERIOD	   5//ms
+#define MODULE_PERIOD	   15//ms
 #define USART_BAUDRATE     115200
 #define QUEUE_SIZE 500
 USART_TypeDef *USARTn = USART1;
@@ -215,7 +215,7 @@ void module_in_run()
     	if (oInputData.servoRight.status_error) {
     		c_io_herkulex_clear(oInputData.servoRight.ID);
     	}
-    	leitura=0;
+
     }
 
     c_common_utils_delayus(100);
@@ -227,13 +227,14 @@ void module_in_run()
     	if (oInputData.servoLeft.status_error) {
     		c_io_herkulex_clear(oInputData.servoLeft.ID);
         }
-    	leitura=1;
+
     }
 
     // Escrita do torque calculado pelo contorlador junto com
     // Sistema de seguranca para que o servo nao ultrapase os +-90 graus
     if (oInputData.init){
     	c_io_herkulex_set_torque(oInputData.servoRight.ID,0);
+    	c_common_utils_delayus(100);
         c_io_herkulex_set_torque(oInputData.servoLeft.ID,0);
     }
     else{

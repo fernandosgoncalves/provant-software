@@ -275,7 +275,7 @@ uint8_t receive() {// precisa de um timeout
 	//verifica quando o primeiro byte chegou
 	while (!c_common_usart_available(usartx) && now<=timeOut)
 		now=c_common_utils_millis();
-	while (c_common_usart_available(usartx) && i<size) {
+	while (c_common_usart_available(usartx)) {
 		lastByte=inByte;
 		inByte = c_common_usart_read(usartx);
 		if (!ok && inByte == 0xFF && lastByte == 0xFF ) {
