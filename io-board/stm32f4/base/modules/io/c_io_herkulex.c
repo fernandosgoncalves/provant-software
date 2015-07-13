@@ -254,28 +254,10 @@ uint8_t receive() {// precisa de um timeout
 	//BUFFER[1]=0xFF;
 	//i=2;
 	/////////////////////////////////
-//	while (now<=timeOut && i<size) {
-//		//verifica quando o primeiro byte chegou
-//		while (!c_common_usart_available(usartx) && now<=timeOut)
-//			now=c_common_utils_millis();
-//		lastByte=inByte;
-//		inByte = c_common_usart_read(usartx);
-//		if (!ok && inByte == 0xFF && lastByte == 0xFF ) {
-//			BUFFER[0]=0xFF;
-//			i=1;
-//			ok=1;
-//		}
-//		if (ok) {
-//			BUFFER[i] = inByte;
-//			if (i==2) size=BUFFER[2];
-//			i++;
-//		}
-//	}
-	//////////////////////////////////
-	//verifica quando o primeiro byte chegou
-//	while (!c_common_usart_available(usartx) && now<=timeOut)
-//		now=c_common_utils_millis();
-	for (i=0;c_common_usart_available(usartx)&& i<size) {
+	while (now<=timeOut && i<size) {
+		//verifica quando o primeiro byte chegou
+		while (!c_common_usart_available(usartx) && now<=timeOut)
+			now=c_common_utils_millis();
 		lastByte=inByte;
 		inByte = c_common_usart_read(usartx);
 		if (!ok && inByte == 0xFF && lastByte == 0xFF ) {
@@ -286,9 +268,14 @@ uint8_t receive() {// precisa de um timeout
 		if (ok) {
 			BUFFER[i] = inByte;
 			if (i==2) size=BUFFER[2];
-				i++;
+			i++;
 		}
 	}
+	//////////////////////////////////
+	//verifica quando o primeiro byte chegou
+//	while (!c_common_usart_available(usartx) && now<=timeOut)
+//		now=c_common_utils_millis();
+
 
 	if (now>=timeOut) {
 		return 0;

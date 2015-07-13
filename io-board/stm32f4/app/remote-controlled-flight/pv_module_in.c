@@ -218,17 +218,17 @@ void module_in_run()
 
     }
 
-    c_common_utils_delayus(100);
-    if (c_io_herkulex_read_data(oInputData.servoLeft.ID)){
-    	oInputData.servoLeft.angularSpeed = -c_io_herkulex_get_velocity(oInputData.servoLeft.ID);
-    	oInputData.servoLeft.angle        = -c_io_herkulex_get_position(oInputData.servoLeft.ID);
-    	oInputData.servoLeft.status_error = c_io_herkulex_get_status_error();
-    	oInputData.servoLeft.status_detai = c_io_herkulex_get_status_detail();
-    	if (oInputData.servoLeft.status_error) {
-    		c_io_herkulex_clear(oInputData.servoLeft.ID);
-        }
-
-    }
+//    c_common_utils_delayus(100);
+//    if (c_io_herkulex_read_data(oInputData.servoLeft.ID)){
+//    	oInputData.servoLeft.angularSpeed = -c_io_herkulex_get_velocity(oInputData.servoLeft.ID);
+//    	oInputData.servoLeft.angle        = -c_io_herkulex_get_position(oInputData.servoLeft.ID);
+//    	oInputData.servoLeft.status_error = c_io_herkulex_get_status_error();
+//    	oInputData.servoLeft.status_detai = c_io_herkulex_get_status_detail();
+//    	if (oInputData.servoLeft.status_error) {
+//    		c_io_herkulex_clear(oInputData.servoLeft.ID);
+//        }
+//
+//    }
 
     // Escrita do torque calculado pelo contorlador junto com
     // Sistema de seguranca para que o servo nao ultrapase os +-90 graus

@@ -148,11 +148,11 @@ void c_io_imu_init(I2C_TypeDef* I2Cx)
 
 #ifdef C_IO_IMU_USE_MPU6050_HMC5883 //Inicialização para a IMU baseada na MPU6050
   // Clear the 'sleep' bit to start the sensor.
-  c_common_i2c_writeByte(I2Cx_imu, MPU6050_I2C_ADDRESS, MPU6050_PWR_MGMT_1, 0);
+ // c_common_i2c_writeByte(I2Cx_imu, MPU6050_I2C_ADDRESS, MPU6050_PWR_MGMT_1, 0);
 
   // Alocar o sub i2c -> desligar o I2C Master da MPU, habilitar I2C bypass
-  c_common_i2c_writeBit(I2Cx_imu, MPU6050_I2C_ADDRESS, MPU6050_USER_CTRL, MPU6050_I2C_MST_EN, 0);
-  c_common_i2c_writeBit(I2Cx_imu, MPU6050_I2C_ADDRESS, MPU6050_INT_PIN_CFG, MPU6050_I2C_BYPASS_EN, 1);
+ // c_common_i2c_writeBit(I2Cx_imu, MPU6050_I2C_ADDRESS, MPU6050_USER_CTRL, MPU6050_I2C_MST_EN, 0);
+ // c_common_i2c_writeBit(I2Cx_imu, MPU6050_I2C_ADDRESS, MPU6050_INT_PIN_CFG, MPU6050_I2C_BYPASS_EN, 1);
 
   /** \todo Implementar e testar o enabling do bus secundário da MPU, para leitura do HMC.*/
   //c_common_i2c_writeByte(0x1E, 0x02, 0x00);
@@ -312,7 +312,7 @@ float mag_tmp[3]={0};
 
 #ifdef C_IO_IMU_USE_MPU6050_HMC5883
     uint8_t  buffer[14];
-    c_common_i2c_readBytes(I2Cx_imu, MPU6050_I2C_ADDRESS, MPU6050_ACCEL_XOUT_H, 14, buffer);
+//    c_common_i2c_readBytes(I2Cx_imu, MPU6050_I2C_ADDRESS, MPU6050_ACCEL_XOUT_H, 14, buffer);
 
     /** A sensitividade do acelerômetro da MPU6050 é dada pela tabela (extraída do datasheet):
     AFS_SEL | Full Scale Range | LSB Sensitivity
