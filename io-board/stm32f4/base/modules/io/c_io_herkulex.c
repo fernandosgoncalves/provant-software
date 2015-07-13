@@ -247,7 +247,7 @@ uint8_t receive() {// precisa de um timeout
 	int i=0;
 	uint8_t lastByte = 0, inByte = 0, ok=0, size = 30;
 	long now = c_common_utils_millis();
-	long timeOut = now + 1;
+	long timeOut = now + 10;
 	//while(c_common_usart_read(usartx)!=0xFF);
 	//if (c_common_usart_read(usartx) != 0xFF) return 0;
 	//BUFFER[0]=0xFF;
@@ -273,9 +273,9 @@ uint8_t receive() {// precisa de um timeout
 //	}
 	//////////////////////////////////
 	//verifica quando o primeiro byte chegou
-	while (!c_common_usart_available(usartx) && now<=timeOut)
-		now=c_common_utils_millis();
-	while (c_common_usart_available(usartx)) {
+//	while (!c_common_usart_available(usartx) && now<=timeOut)
+//		now=c_common_utils_millis();
+	for (i=0;c_common_usart_available(usartx)&& i<size) {
 		lastByte=inByte;
 		inByte = c_common_usart_read(usartx);
 		if (!ok && inByte == 0xFF && lastByte == 0xFF ) {
