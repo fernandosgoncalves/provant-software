@@ -215,10 +215,8 @@ void module_in_run()
     	if (oInputData.servoRight.status_error) {
     		c_io_herkulex_clear(oInputData.servoRight.ID);
     	}
-    	leitura=0;
     }
 
-    c_common_utils_delayus(100);
     if (c_io_herkulex_read_data(oInputData.servoLeft.ID)){
     	oInputData.servoLeft.angularSpeed = -c_io_herkulex_get_velocity(oInputData.servoLeft.ID);
     	oInputData.servoLeft.angle        = -c_io_herkulex_get_position(oInputData.servoLeft.ID);

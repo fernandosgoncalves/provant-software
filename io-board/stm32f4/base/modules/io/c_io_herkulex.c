@@ -41,7 +41,11 @@ int checksum1(uint8_t* data, int lenghtString);
 int checksum2(int XOR);
 void addData(int GoalLSB, int GoalMSB, int set, int servoID);
 void sendData();
-uint8_t receiveData();
+uint8_t readData();
+int getPosition(int servoID);
+int getSpeed(int servoID);
+void moveAll(int servoID, int Goal, int iLed);
+void speedAll(int servoID, int Goal, int iLed);
 /* Private functions ---------------------------------------------------------*/
 /* Exported functions definitions --------------------------------------------*/
 /** \brief Inicializa o usart para comunicacao serial entre servo e discovery
@@ -78,7 +82,7 @@ void c_io_herkulex_initialize(){
 }
 
 // stat
-uint8_t c_io_herkulex_stat(int servoID){
+uint8_t c_io_herkulex_status(int servoID){
 
 	pSize = 0x07;			//3.Packet size
 	pID   = servoID;			//4.Servo ID - 0XFE=All servos
@@ -341,14 +345,12 @@ void c_io_herkulex_moveAll(int servoID, int Goal, int iLed)
 }
 
 // move all servo at the same time to a position: servo list building
-void c_io_herkulex_moveAllAngle(int servoID, float angle, int iLed)
+void c_io_herkulex_moveAll(int servoID, float angle, int iLed)
 {
 		if (angle > 160.0|| angle < -160.0) return; // out of the range
-		int position = (int)(angle/0.325) + 512;
+		int position = (int)((angle*180)/(0.325*PI)) + 512;
 		moveAll(servoID, position, iLed);
 }
-
-
 
 // move all servo at the same time with different speeds: servo list building
 void c_io_herkulex_moveSpeedAll(int servoID, int Goal, int iLed)
@@ -427,62 +429,15 @@ void c_io_herkulex_actionAll(int pTime)
 
 }
 
-// get Position
- int c_io_herkulex_getPosition(int servoID) {
-	int Position  = 0;
-
-    pSize = 0x09;               // 3.Packet size 7-58
-	pID   = servoID;     	    // 4. Servo ID - 253=all servos
-	cmd   = RAM_READ_REQ;           // 5. CMD
-	data[0]=0x3A;               // 8. Address
-	data[1]=0x02;               // 9. Lenght
-
-	lenghtString=2;             // lenghtData
-
-	ck1=checksum1(data,lenghtString);	//6. Checksum1
-	ck2=checksum2(ck1);					//7. Checksum2
-
-	dataEx[0] = 0xFF;			// Packet Header
-	dataEx[1] = 0xFF;			// Packet Header
-	dataEx[2] = pSize;	 		// Packet Size
-	dataEx[3] = pID;			// Servo ID
-	dataEx[4] = cmd;			// Command Ram Write
-	dataEx[5] = ck1;			// Checksum 1
-	dataEx[6] = ck2;			// Checksum 2
-	dataEx[7] = data[0];      	// Address
-	dataEx[8] = data[1]; 		// Length
-
-	sendData(dataEx, pSize);
-
-    delay(1);
-	readData(13);
-
-
-	pSize = dataEx[2];           // 3.Packet size 7-58
-	pID   = dataEx[3];           // 4. Servo ID
-	cmd   = dataEx[4];           // 5. CMD
-	data[0]=dataEx[7];
-    data[1]=dataEx[8];
-    data[2]=dataEx[9];
-    data[3]=dataEx[10];
-    data[4]=dataEx[11];
-    data[5]=dataEx[12];
-    lenghtString=6;
-
-    ck1=checksum1(data,lenghtString);	//6. Checksum1
-	ck2=checksum2(ck1);					//7. Checksum2
-
-    if (ck1 != dataEx[5]) return -1;
-	if (ck2 != dataEx[6]) return -1;
-
-	Position = ((dataEx[10]&0x03)<<8) | dataEx[9];
-        return Position;
-
-}
-
+// get Position in rad
 float c_io_herkulex_getAngle(int servoID) {
 	int pos = (int)getPosition(servoID);
-	return (pos-512) * 0.325;
+	return (((float)pos* 0.325)-166.65)*PI/180;
+}
+// get Position in rad/seg
+float c_io_herkulex_getSpeed(int servoID){
+	int speed=(int)getSpeed(servoID);
+	return ((float)speed*29.09)*PI/180;
 }
 
 // reboot single servo - pay attention 253 - all servos doesn't work!
@@ -534,58 +489,7 @@ void c_io_herkulex_setLed(int servoID, int valueLed)
 	sendData(dataEx, pSize);
 }
 
-// get the speed for one servo - values betweeb -1023 <--> 1023
-int c_io_herkulex_getSpeed(int servoID) {
-  int speedy  = 0;
 
-  pSize = 0x09;               // 3.Packet size 7-58
-  pID   = servoID;     	   	  // 4. Servo ID
-  cmd   = RAM_READ_REQ;           // 5. CMD
-  data[0]=0x40;               // 8. Address
-  data[1]=0x02;               // 9. Lenght
-
-  lenghtString=2;             // lenghtData
-
-  ck1=checksum1(data,lenghtString);		//6. Checksum1
-  ck2=checksum2(ck1);					//7. Checksum2
-
-  dataEx[0] = 0xFF;			// Packet Header
-  dataEx[1] = 0xFF;			// Packet Header
-  dataEx[2] = pSize;		// Packet Size
-  dataEx[3] = pID;			// Servo ID
-  dataEx[4] = cmd;			// Command Ram Write
-  dataEx[5] = ck1;			// Checksum 1
-  dataEx[6] = ck2;			// Checksum 2
-  dataEx[7] = data[0]; 	    // Address
-  dataEx[8] = data[1]; 		// Length
-
-  sendData(dataEx, pSize);
-
-  delay(1);
-  readData(13);
-
-
-  pSize = dataEx[2];           // 3.Packet size 7-58
-  pID   = dataEx[3];           // 4. Servo ID
-  cmd   = dataEx[4];           // 5. CMD
-  data[0]=dataEx[7];
-  data[1]=dataEx[8];
-  data[2]=dataEx[9];
-  data[3]=dataEx[10];
-  data[4]=dataEx[11];
-  data[5]=dataEx[12];
-  lenghtString=6;
-
-  ck1=checksum1(data,lenghtString);	//6. Checksum1
-  ck2=checksum2(ck1);				//7. Checksum2
-
-  if (ck1 != dataEx[5]) return -1;
-  if (ck2 != dataEx[6]) return -1;
-
-  speedy = ((dataEx[10]&0xFF)<<8) | dataEx[9];
-  return speedy;
-
-}
 
 
 
@@ -819,33 +723,184 @@ void addData(int GoalLSB, int GoalMSB, int set, int servoID){
 
 
 void sendData(uint8_t* buffer,int lenght) {
-//	for (int i=0; i < lenght ; ++i)
-//		c_common_usart_putchar(USARTx,buffer[i]);
-	c_common_usart_puts(USARTx,buffer);
+	for (int i=0; i < lenght ; ++i)
+		c_common_usart_putchar(USARTx,buffer[i]);
 }
 
-uint8_t receiveData(int size) {
-	int i = 0;
-	int beginsave=0;
-	uint8_t lastByte = 0, inByte = 0;
-	long now = c_common_utils_millis();
-	long timeOut = now + 1;
-	//Time out para recever os dados
-	while (!c_common_usart_available(USARTx) && now<timeOut)
-			now=c_common_utils_millis();
-
-	while (c_common_usart_available(USARTx) && i<size) {
-			lastByte=inByte;
-			inByte = c_common_usart_read(USARTx);
-			if (inByte == 0xFF & lastByte == 0xFF) {
-				i=0;
-				beginsave=1;
-			}
-			if (beginsave==1 && i<size) {
-				dataEx[i] = inByte;
-				i++;
-			}
+uint8_t readData(int lenght) {
+//	long now = c_common_utils_millis();
+//	long timeOut = now + 1;
+//	//Time out para recever os dados
+//	while (!c_common_usart_available(USARTx) && now<timeOut)
+//			now=c_common_utils_millis();
+	for (int i=0;c_common_usart_available(USARTx)==1 && i<lenght;i++){
+			dataEx[i] = c_common_usart_read(USARTx);
 	}
 	c_common_utils_flush();
 }
 
+int getPosition(int servoID) {
+	int Position  = 0;
+
+    pSize = 0x09;               // 3.Packet size 7-58
+	pID   = servoID;     	    // 4. Servo ID - 253=all servos
+	cmd   = RAM_READ_REQ;           // 5. CMD
+	data[0]=0x3A;               // 8. Address
+	data[1]=0x02;               // 9. Lenght
+
+	lenghtString=2;             // lenghtData
+
+	ck1=checksum1(data,lenghtString);	//6. Checksum1
+	ck2=checksum2(ck1);					//7. Checksum2
+
+	dataEx[0] = 0xFF;			// Packet Header
+	dataEx[1] = 0xFF;			// Packet Header
+	dataEx[2] = pSize;	 		// Packet Size
+	dataEx[3] = pID;			// Servo ID
+	dataEx[4] = cmd;			// Command Ram Write
+	dataEx[5] = ck1;			// Checksum 1
+	dataEx[6] = ck2;			// Checksum 2
+	dataEx[7] = data[0];      	// Address
+	dataEx[8] = data[1]; 		// Length
+
+	sendData(dataEx, pSize);
+
+    delay(1);
+	readData(13);
+
+
+	pSize = dataEx[2];           // 3.Packet size 7-58
+	pID   = dataEx[3];           // 4. Servo ID
+	cmd   = dataEx[4];           // 5. CMD
+	data[0]=dataEx[7];
+    data[1]=dataEx[8];
+    data[2]=dataEx[9];
+    data[3]=dataEx[10];
+    data[4]=dataEx[11];
+    data[5]=dataEx[12];
+    lenghtString=6;
+
+    ck1=checksum1(data,lenghtString);	//6. Checksum1
+	ck2=checksum2(ck1);					//7. Checksum2
+
+    if (ck1 != dataEx[5]) return -1;
+	if (ck2 != dataEx[6]) return -1;
+
+	Position = ((dataEx[10]&0x03)<<8) | dataEx[9];
+    return Position;
+
+}
+
+// get the speed for one servo - values betweeb -1023 <--> 1023
+int getSpeed(int servoID) {
+  int speedy  = 0;
+
+  pSize = 0x09;               // 3.Packet size 7-58
+  pID   = servoID;     	   	  // 4. Servo ID
+  cmd   = RAM_READ_REQ;           // 5. CMD
+  data[0]=0x40;               // 8. Address
+  data[1]=0x02;               // 9. Lenght
+
+  lenghtString=2;             // lenghtData
+
+  ck1=checksum1(data,lenghtString);		//6. Checksum1
+  ck2=checksum2(ck1);					//7. Checksum2
+
+  dataEx[0] = 0xFF;			// Packet Header
+  dataEx[1] = 0xFF;			// Packet Header
+  dataEx[2] = pSize;		// Packet Size
+  dataEx[3] = pID;			// Servo ID
+  dataEx[4] = cmd;			// Command Ram Write
+  dataEx[5] = ck1;			// Checksum 1
+  dataEx[6] = ck2;			// Checksum 2
+  dataEx[7] = data[0]; 	    // Address
+  dataEx[8] = data[1]; 		// Length
+
+  sendData(dataEx, pSize);
+
+  delay(1);
+  readData(13);
+
+
+  pSize = dataEx[2];           // 3.Packet size 7-58
+  pID   = dataEx[3];           // 4. Servo ID
+  cmd   = dataEx[4];           // 5. CMD
+  data[0]=dataEx[7];
+  data[1]=dataEx[8];
+  data[2]=dataEx[9];
+  data[3]=dataEx[10];
+  data[4]=dataEx[11];
+  data[5]=dataEx[12];
+  lenghtString=6;
+
+  ck1=checksum1(data,lenghtString);	//6. Checksum1
+  ck2=checksum2(ck1);				//7. Checksum2
+
+  if (ck1 != dataEx[5]) return -1;
+  if (ck2 != dataEx[6]) return -1;
+
+  speedy = ((dataEx[10]&0xFF)<<8) | dataEx[9];
+  return speedy;
+
+}
+
+// move all servo at the same time to a position: servo list building
+void moveAll(int servoID, int Goal, int iLed){
+	  if (Goal > 1023 || Goal < 0)
+		return;						 //0 <--> 1023 range
+
+	  int iMode=0;                   //mode=position
+	  int iStop=0;                   //stop=0
+
+
+	  // Position definition
+	  int posLSB=Goal & 0X00FF;					// MSB Pos
+	  int posMSB=(Goal & 0XFF00) >> 8;			// LSB Pos
+
+	  //led
+	  int iBlue=0;
+	  int iGreen=0;
+	  int iRed=0;
+	  switch (iLed) {
+	  case 1:
+		iGreen=1;
+		break;
+	  case 2:
+		iBlue=1;
+		break;
+	  case 3:
+		iRed=1;
+		break;
+	  }
+
+	  int SetValue=iStop+iMode*2+iGreen*4+iBlue*8+iRed*16;	//assign led value
+
+	  addData(posLSB, posMSB, SetValue, servoID);	//add servo data to list, pos mode
+}
+
+if ((pTime <0) || (pTime > 2856)) return;
+
+    pSize = 0x08 + conta;     	    // 3.Packet size 7-58
+	cmd   = S_JOG_REQ;		 			// 5. CMD SJOG Write n servo with same execution time
+	playTime=(int)((float)pTime/11.2);// 8. Execution time
+
+    pID=0xFE^playTime;
+    ck1=checksum1(moveData,conta);	//6. Checksum1
+	ck2=checksum2(ck1);				//7. Checksum2
+
+    pID=0xFE;
+	dataEx[0] = 0xFF;				// Packet Header
+	dataEx[1] = 0xFF;				// Packet Header
+	dataEx[2] = pSize;	 			// Packet Size
+	dataEx[3] = pID;				// Servo ID
+	dataEx[4] = cmd;				// Command Ram Write
+	dataEx[5] = ck1;				// Checksum 1
+	dataEx[6] = ck2;				// Checksum 2
+	dataEx[7] = playTime;			// Execution time
+
+	for (int i=0; i < conta; i++)
+		dataEx[i+8]=moveData[i];	// Variable servo data
+
+	sendData(dataEx, pSize);
+
+	conta=0; 						//reset counter

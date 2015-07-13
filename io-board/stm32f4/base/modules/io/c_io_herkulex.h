@@ -149,36 +149,39 @@
 /* Exported macro ------------------------------------------------------------*/
 
 /* Exported functions ------------------------------------------------------- */
+//General Conmmands
 void c_io_herkulex_init(USART_TypeDef *usartn, int baudrate);
 void c_io_herkulex_initialize();
-uint8_t  c_io_herkulex_stat(int servoID);
 void  c_io_herkulex_ACK(int valueACK);
 uint8_t  c_io_herkulex_model();
 void  c_io_herkulex_set_ID(int ID_Old, int ID_New);
 void  c_io_herkulex_clearError(int servoID);
-
 void  c_io_herkulex_torqueON(int servoID);
 void  c_io_herkulex_torqueOFF(int servoID);
+void  c_io_herkulex_reboot(int servoID);
+void  c_io_herkulex_setLed(int servoID, int valueLed);
 
+//Moviments for two or more servos
 void  c_io_herkulex_moveAll(int servoID, int Goal, int iLed);
 void  c_io_herkulex_moveSpeedAll(int servoID, int Goal, int iLed);
 void  c_io_herkulex_moveAllAngle(int servoID, float angle, int iLed);
 void  c_io_herkulex_actionAll(int pTime);
-
+//Moviments for only one servo
 void  c_io_herkulex_moveSpeedOne(int servoID, int Goal, int pTime, int iLed); // move one servo with continous rotation
 void  c_io_herkulex_moveOne(int servoID, int Goal, int pTime, int iLed);
 void  c_io_herkulex_moveOneAngle(int servoID, float angle, int pTime, int iLed);
-
-int   c_io_herkulex_getPosition(int servoID);
+//Read data
 float c_io_herkulex_getAngle(int servoID);
-int   c_io_herkulex_getSpeed(int servoID);
+float c_io_herkulex_getSpeed(int servoID);
 
-void  c_io_herkulex_reboot(int servoID);
-void  c_io_herkulex_setLed(int servoID, int valueLed);
 
-void  c_io_herkulex_writeRegistryRAM(int servoID, int address, int writeByte);
 void  c_io_herkulex_writeRegistryEEP(int servoID, int address, int writeByte);
-
+void  c_io_herkulex_readRegistryEEP(int servoID, int address, int writeByte);
+void  c_io_herkulex_writeRegistryRAM(int servoID, int address, int writeByte);
+void  c_io_herkulex_readRegistryRAM(int servoID, int address, int writeByte);
+uint8_t  c_io_herkulex_status(int servoID);
+void  c_io_herkulex_write_I_JOG(int servoID, int address, int writeByte);
+void  c_io_herkulex_write_S_JOG(int servoID, int address, int writeByte);
 #ifdef __cplusplus
 }
 #endif
