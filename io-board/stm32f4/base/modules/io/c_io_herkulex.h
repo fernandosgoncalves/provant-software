@@ -20,163 +20,164 @@
 #include "c_common_uart.h"
 #include "c_common_utils.h"
 #include "pv_typedefs.h"
+#include <math.h>
 
-
-/* Includes ------------------------------------------------------------------*/
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
-#define KV 0.325*PI/(0.0112*180)
-#define TIME_OUT 10
-#define INTER_PKG_TIME 0.000105
-#define HEADER 0xFF
-// status error register, 48
-#define EXCEED_INPUT_VOLT_LIMIT 0x01
-#define EXCEED_ALLOWED_POT_LIMIT 0x02
-#define EXCEED_TEMP_LIMIT 0x04
-#define INVALID_PACKET 0x08
-#define OVERLOAD 0x10
-#define DRIVER_FAULT 0x20
-#define EEP_REG_DISTORTED 0x40
+// Request Packet
+#define EEP_WRITE_REQ  0x01
+#define EEP_READ_REQ   0x02
+#define RAM_WRITE_REQ  0x03
+#define RAM_READ_REQ   0x04
+#define I_JOG_REQ     0x05
+#define S_JOG_REQ     0x06
+#define STAT_REQ      0x07
+#define ROLLBACK_REQ  0x08
+#define REBOOT_REQ    0x09
+//ACK Packet
+#define EEP_WRITE_ACK  0x41
+#define EEP_READ_ACK   0x42
+#define RAM_WRITE_ACK  0x43
+#define RAM_READ_ACK   0x44
+#define I_JOG_ACK  0x45
+#define S_JOG_ACK  0x46
+#define STAT_ACK   0x47
+#define ROLLBACK_ACK  0x48
+#define REBOOT_ACK    0x49
 
-// status error register, 49
-#define MOVING_FLAG 0x01
-#define INPOSITION_FLAG 0x02
-//invalid packet errors
-#define CHECKSUM_ERR 0x04
-#define UNKNOWM_COMMAND 0x08
-#define EXCEED_REG_RANGE 0x10
-#define GARBAGE_DETECTED 0x20
-//end of packet errors
-#define MOTOR_ON_FLAG 0x40
+//Addresses
+#define MODEL_NO1_EEP  0
+#define MODEL_NO2_EEP  1
+#define VERSION1_EEP   2
+#define VERSION2_EEP   3
+#define BAUD_RATE_EEP  4
+#define SERVO_ID_EEP   6
+#define SERVO_ID_RAM   0
+#define ACK_POLICY_EEP   7
+#define ACK_POLICY_RAM   1
+#define ALARM_LED_POLICY_EEP   8
+#define ALARM_LED_POLICY_RAM   2
+#define TORQUE_POLICY_EEP   9
+#define TORQUE_POLICY_RAM   3
+#define MAX_TEMP_EEP   11
+#define MAX_TEMP_RAM   5
+#define MIN_VOLTAGE_EEP   12
+#define MIN_VOLTAGE_RAM   6
+#define MAX_VOLTAGE_EEP   13
+#define MAX_VOLTAGE_RAM   7
+#define ACCELERATION_RATIO_EEP   14
+#define ACCELERATION_RATIO_RAM   8
+#define MAX_ACCELERATION_TIME_EEP   15
+#define MAX_ACCELERATION_TIME_RAM   9
+#define DEAD_ZONE_EEP   16
+#define DEAD_ZONE_RAM   10
+#define SATURATOR_OFFSET_EEP  17
+#define SATURATOR_OFFSET_RAM  11
+#define SATURATOR_SLOPE_EEP   18
+#define SATURATOR_SLOPE_RAM   12
+#define PWM_OFFSET_EEP   20
+#define PWM_OFFSET_RAM   14
+#define MIN_PWM_EEP   21
+#define MIN_PWM_RAM   15
+#define MAX_PWM_EEP   22
+#define MAX_PWM_RAM   16
+#define OVERLOAD_PWM_THRESHOLD_EEP   24
+#define OVERLOAD_PWM_THRESHOLD_RAM   18
+#define MIN_POSITION_EEP   26
+#define MIN_POSITION_RAM   20
+#define MAX_POSITION_EEP   28
+#define MAX_POSITION_RAM   22
+#define POSITION_KP_EEP   30
+#define POSITION_KP_RAM   24
+#define POSITION_KD_EEP   32
+#define POSITION_KD_RAM   26
+#define POSITION_KI_EEP   34
+#define POSITION_KI_RAM   28
+#define POSITION_FEEDFORWARD_GAIN1_EEP   36
+#define POSITION_FEEDFORWARD_GAIN1_RAM   30
+#define POSITION_FEEDFORWARD_GAIN2_EEP   38
+#define POSITION_FEEDFORWARD_GAIN2_RAM   32
+#define VELOCITY_KP_EEP   40
+#define VELOCITY_KP_RAM   34
+#define VELOCITY_KI_EEP   42
+#define VELOCITY_KI_RAM   36
+#define LED_BLINK_PERIOD_EEP   44
+#define LED_BLINK_PERIOD_RAM   38
+#define ADC_FAULT_CHECK_PERIOD_EEP   45
+#define ADC_FAULT_CHECK_PERIOD_RAM   39
+#define PACKET_GARBAGE_CHECK_PERIOD_EEP   46
+#define PACKET_GARBAGE_CHECK_PERIOD_RAM   40
+#define STOP_DETECTION_PERIOD_EEP   47
+#define STOP_DETECTION_PERIOD_RAM   41
+#define OVERLOAD_DETECTION_PERIOD_EEP  48
+#define OVERLOAD_DETECTION_PERIOD_RAM  42
+#define STOP_THRESHOLD_EEP   49
+#define STOP_THRESHOLD_RAM   43
+#define INPOSITION_MARGIN_EEP   50
+#define INPOSITION_MARGIN_RAM   44
+#define CALIBRATION_DIFF_EEP   53
+#define CALIBRATION_DIFF_RAM   47
+#define STATUS_ERROR_RAM   48
+#define STATUS_DETAIL_RAM  49
+#define TORQUE_CONTROL_RAM  52
+#define LED_CONTROL_RAM  53
+#define VOLTAGE_RAM  54
+#define TEMPERATURE_RAM  55
+#define CURRENT_CONTROL_MODE_RAM  56
+#define TICK_RAM 57
+#define CALIBRATED_POSITION_RAM  58
+#define ABSOLUTE_POSITION_RAM  60
+#define DIFFERENTIAL_POSITION_RAM  62
+#define PWM_RAM  64
+#define ABSOLUTE_GOAL_POSITION_RAM  68
+#define ABSOLUTE_DESIRED_TRAJECTORY_POSITION  70
+#define DESIRED_VELOCITY_RAM  72
 
-//Address of registers in RAM
-#define REG_SERVO_ID 0
-#define REG_ACK_POLICY 1
-#define REG_ALARM_LED_POLICY 2
-#define REG_TORQUE_POLICY 3
-#define REG_MAX_TEMP 5
-#define REG_MIN_VOLT 6
-#define REG_MAX_VOLT 7
-#define REG_ACC_RATIO 8
-#define REG_MAX_ACC_TIME 9
-#define REG_DEAD_ZONE 10
-#define REG_SATURATOR_OFFSET 11
-#define REG_SATURATOR_SLOPE 12
-#define REG_PWM_OFFSET 14
-#define REG_MIN_PWM 15
-#define REG_MAX_PWM 16
-#define REG_OVERLOAD_PWM_THRESHOLD 18
-#define REG_MIN_POS 20
-#define REG_MAX_POS 22
-#define REG_KP 24
-#define REG_KD 26
-#define REG_KI 28
-#define REG_KFF1 30
-#define REG_KFF2 32
-
-//some other registers from voltatile RAM
-#define REG_INPOSITION_MARGIN 44
-#define REG_CALIBRATION _DIFF 47
-#define REG_STATUS_ERROR 48
-#define REG_STATUS_DETAIL 49
-#define REG_TORQUE_CONTROL 52
-#define REG_LED_CONTROL 53
-#define REG_VOLT 54
-#define REG_TEMP 55
-#define REG_CURRENT_CONTROL_MODE 56
-#define REG_TICK 57
-#define REG_CALIBRATED_POS 58
-#define REG_ABSOLUTE_POS 60
-#define REG_DIFFERENTIAL_POS 62
-#define REG_PWM 64
-#define REG_ABSOLUTE_GOAL_POS 68
-#define REG_DESIRED_VELOCITY 70
-
-//commands to servo
-#define EEP_WRITE 0x01
-#define EEP_READ 0x02
-#define RAM_WRITE 0x03
-#define RAM_READ 0x04
-#define I_JOG 0x05
-#define S_JOG 0x06
-#define STAT 0x07
-#define ROLLBACK 0x08
-#define REBOOT 0x09
-
-//Address of registers in EEP
-#define EEP_SERVO_ID 6
-
-//ack responses
-#define ACK_RAM_WRITE 0x43
-#define ACK_RAM_READ 0x44
-#define ACK_I_JOG 0x45
-#define ACK_S_JOG 0x46
-#define ACK_STAT 0x47
-#define ACK_ROLLBACK 0x48
-#define ACK_REBOOT 0x49
-
-#define EEP_BAUD_RATE 0x04
-
-#define RAM 0
-#define EEP 1
-#define TORQUE_ON 0x60
-#define TORQUE_FREE 0x00
-#define TORQUE_BREAK 0x40
-
-#define BROADCAST_ADDR 0xFE;
-
-#define POSITION_MODE 0
-#define ROTATION_MODE 1
+#define BROADCAST_ID   0xFE
+#define TORQUE_ON      0x60
+#define TORQUE_FREE    0x00
+#define TORQUE_BREAK   0x40
+#define POSITION_MODE  0x00
+#define ROTATION_MODE  0x01
 
 //Leds
+#define LED_OFF   0
 #define LED_GREEN 1
-#define LED_BLUE 2
-#define LED_RED 4
+#define LED_BLUE  2
+#define LED_RED   4
 
 /* Exported macro ------------------------------------------------------------*/
 
 /* Exported functions ------------------------------------------------------- */
+void c_io_herkulex_init(USART_TypeDef *usartn, int baudrate);
+void c_io_herkulex_initialize();
+uint8_t  c_io_herkulex_stat(int servoID);
+void  c_io_herkulex_ACK(int valueACK);
+uint8_t  c_io_herkulex_model();
+void  c_io_herkulex_set_ID(int ID_Old, int ID_New);
+void  c_io_herkulex_clearError(int servoID);
 
+void  c_io_herkulex_torqueON(int servoID);
+void  c_io_herkulex_torqueOFF(int servoID);
 
-//Direct servo commands
-uint8_t  c_io_herkulex_read(char mem, char servo_id, char reg_addr, unsigned char data_length);
-uint8_t c_io_herkulex_write(char mem, char servo_id, char reg_addr, unsigned char datalength, char *data);
-void c_io_herkulex_ijog();
-void c_io_herkulex_sjog(char size, char servo_id, uint16_t data, char stop, char mode, char led, char ptime);
-uint8_t c_io_herkulex_stat(uint8_t servo_id);
-void c_io_herkulex_rollback();//not implemented yet
-void c_io_herkulex_reboot(uint8_t servo_id);
-//uint8_t receive();
+void  c_io_herkulex_moveAll(int servoID, int Goal, int iLed);
+void  c_io_herkulex_moveSpeedAll(int servoID, int Goal, int iLed);
+void  c_io_herkulex_moveAllAngle(int servoID, float angle, int iLed);
+void  c_io_herkulex_actionAll(int pTime);
 
-//Indirect commands
-void c_io_herkulex_init(USART_TypeDef *USART, int baudrate);
-void c_io_herkulex_config_ack_policy(char servo_id, char policy);
-void c_io_herkulex_config_led_policy(char servo_id, char policy);
-void c_io_herkulex_led_control(char servo_id, char led);
-void c_io_herkulex_clear(uint8_t servo_id);
-void c_io_herkulex_set_torque_control(char servo_id, char control);
+void  c_io_herkulex_moveSpeedOne(int servoID, int Goal, int pTime, int iLed); // move one servo with continous rotation
+void  c_io_herkulex_moveOne(int servoID, int Goal, int pTime, int iLed);
+void  c_io_herkulex_moveOneAngle(int servoID, float angle, int pTime, int iLed);
 
-/** Control Interface
-	 *
-	 * Functions for feedback, the 1st read the current absolute
-	 * position, the second read the angular velocity. The outputs
-	 * are converted to degrees and rad/s respectively
-	 */
-float c_io_herkulex_read_position(uint8_t servo_id);
-float c_io_herkulex_read_position_rad(uint8_t servo_id);
-float c_io_herkulex_read_velocity(uint8_t servo_id);
-int8_t c_io_herkulex_read_data(uint8_t servo_id);
-float c_io_herkulex_get_position(uint8_t servo_id);
-float c_io_herkulex_get_velocity(uint8_t servo_id);
-//set input toque to servo
-void c_io_herkulex_set_torque(uint8_t servo_id, int16_t pwm);
-void c_io_herkulex_set_goal_position(uint8_t servo_id, float position_deg);
-void c_io_herkulex_set_goal_position_rad(uint8_t servo_id, float position_rad);
+int   c_io_herkulex_getPosition(int servoID);
+float c_io_herkulex_getAngle(int servoID);
+int   c_io_herkulex_getSpeed(int servoID);
 
-//status get functions
-uint8_t c_io_herkulex_get_status_error();
-uint8_t c_io_herkulex_get_status_detail();
-uint8_t c_io_herkulex_get_status();
+void  c_io_herkulex_reboot(int servoID);
+void  c_io_herkulex_setLed(int servoID, int valueLed);
+
+void  c_io_herkulex_writeRegistryRAM(int servoID, int address, int writeByte);
+void  c_io_herkulex_writeRegistryEEP(int servoID, int address, int writeByte);
 
 #ifdef __cplusplus
 }
