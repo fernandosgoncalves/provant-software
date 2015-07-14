@@ -90,10 +90,7 @@ void module_in_init()
 
 	/* Inicia a usart */
 	c_io_herkulex_init(USARTn,USART_BAUDRATE);
-	//c_common_utils_delayms(12);
-	servo_init(oInputData.servoRight.ID);
-	c_common_utils_delayms(12);
-	servo_init(oInputData.servoLeft.ID);
+	c_io_herkulex_initialize();
 	/* Pin for debug */
 	//debugPin = c_common_gpio_init(GPIOE, GPIO_Pin_13, GPIO_Mode_OUT);
 
@@ -207,45 +204,45 @@ void module_in_run()
     /*----------------------Tratamento dos servos---------------------*/
     //Leitura da posicao e velocidade atual dos servo motores
 
-    if (c_io_herkulex_read_data(oInputData.servoRight.ID)){
-    	oInputData.servoRight.angularSpeed = c_io_herkulex_get_velocity(oInputData.servoRight.ID);
-    	oInputData.servoRight.angle        = c_io_herkulex_get_position(oInputData.servoRight.ID);
-    	oInputData.servoRight.status_error = c_io_herkulex_get_status_error();
-    	oInputData.servoRight.status_detai = c_io_herkulex_get_status_detail();
-    	if (oInputData.servoRight.status_error) {
-    		c_io_herkulex_clear(oInputData.servoRight.ID);
-    	}
-    }
-
-    if (c_io_herkulex_read_data(oInputData.servoLeft.ID)){
-    	oInputData.servoLeft.angularSpeed = -c_io_herkulex_get_velocity(oInputData.servoLeft.ID);
-    	oInputData.servoLeft.angle        = -c_io_herkulex_get_position(oInputData.servoLeft.ID);
-    	oInputData.servoLeft.status_error = c_io_herkulex_get_status_error();
-    	oInputData.servoLeft.status_detai = c_io_herkulex_get_status_detail();
-    	if (oInputData.servoLeft.status_error) {
-    		c_io_herkulex_clear(oInputData.servoLeft.ID);
-        }
-    	leitura=1;
-    }
+//    if (c_io_herkulex_read_data(oInputData.servoRight.ID)){
+//    	oInputData.servoRight.angularSpeed = c_io_herkulex_get_velocity(oInputData.servoRight.ID);
+//    	oInputData.servoRight.angle        = c_io_herkulex_get_position(oInputData.servoRight.ID);
+//    	oInputData.servoRight.status_error = c_io_herkulex_get_status_error();
+//    	oInputData.servoRight.status_detai = c_io_herkulex_get_status_detail();
+//    	if (oInputData.servoRight.status_error) {
+//    		c_io_herkulex_clear(oInputData.servoRight.ID);
+//    	}
+//    }
+//
+//    if (c_io_herkulex_read_data(oInputData.servoLeft.ID)){
+//    	oInputData.servoLeft.angularSpeed = -c_io_herkulex_get_velocity(oInputData.servoLeft.ID);
+//    	oInputData.servoLeft.angle        = -c_io_herkulex_get_position(oInputData.servoLeft.ID);
+//    	oInputData.servoLeft.status_error = c_io_herkulex_get_status_error();
+//    	oInputData.servoLeft.status_detai = c_io_herkulex_get_status_detail();
+//    	if (oInputData.servoLeft.status_error) {
+//    		c_io_herkulex_clear(oInputData.servoLeft.ID);
+//        }
+//    	leitura=1;
+//    }
 
     // Escrita do torque calculado pelo contorlador junto com
     // Sistema de seguranca para que o servo nao ultrapase os +-90 graus
     if (oInputData.init){
-    	c_io_herkulex_set_torque(oInputData.servoRight.ID,0);
-        c_io_herkulex_set_torque(oInputData.servoLeft.ID,0);
+    	c_io_herkulex_setTorqueOne(oInputData.servoRight.ID,0,0,0);
+    	c_io_herkulex_setTorqueOne(oInputData.servoLeft.ID,0,0,0);
     }
     else{
 
     	c_common_utils_delayus(10);
     	if((oInputData.servoLeft.angle>0.9*(PI/2) && iControlOutputData.actuation.servoLeft>0) || (oInputData.servoLeft.angle<-0.9*(PI/2) && iControlOutputData.actuation.servoLeft<0))
-    		c_io_herkulex_set_torque(oInputData.servoLeft.ID,0);
+    		c_io_herkulex_setTorqueOne((int)oInputData.servoLeft.ID,0,0,0);
     	else
-    		c_io_herkulex_set_torque(oInputData.servoLeft.ID,-iControlOutputData.actuation.servoLeft);
+    		c_io_herkulex_setTorqueOne((int)oInputData.servoLeft.ID,-iControlOutputData.actuation.servoLeft,0,0);
 
     	if((oInputData.servoRight.angle>0.9*(PI/2) && iControlOutputData.actuation.servoRight>0) || (oInputData.servoRight.angle<-0.9*(PI/2) && iControlOutputData.actuation.servoRight<0))
-    		c_io_herkulex_set_torque(oInputData.servoRight.ID,0);
+    		c_io_herkulex_setTorqueOne((int)oInputData.servoRight.ID,0,0,0);
     	else
-    		c_io_herkulex_set_torque(oInputData.servoRight.ID,iControlOutputData.actuation.servoRight);
+    		c_io_herkulex_setTorqueOne((int)oInputData.servoRight.ID,iControlOutputData.actuation.servoRight,0,0);
 
 
     }
@@ -365,51 +362,6 @@ void module_in_run()
 /* IRQ handlers ------------------------------------------------------------- */
 void servo_init(uint8_t ID)
 {
-	c_io_herkulex_clear(ID);
-
-	//c_common_utils_delayms(12);
-	c_io_herkulex_reboot(ID);
-
-	c_common_utils_delayms(1000);
-	c_io_herkulex_set_torque_control(ID,TORQUE_FREE);//torque free
-
-	DATA[0]=1;
-	//only reply to read commands
-	c_io_herkulex_config_ack_policy(ID,1);
-
-	//Acceleration Ratio = 0
-	DATA[0]=0;
-	c_io_herkulex_write(RAM,ID,REG_ACC_RATIO,1,DATA);
-
-	//set no acceleration time
-	DATA[0]=0;
-	c_io_herkulex_write(RAM,ID,REG_MAX_ACC_TIME,1,DATA);
-
-	DATA[0]=0;
-	c_io_herkulex_write(RAM,ID,REG_PWM_OFFSET,1,DATA);
-
-	//min pwm = 0
-	DATA[0]=0;
-	c_io_herkulex_write(RAM,ID,REG_MIN_PWM,1,DATA);
-
-	//max pwm >1023 -> no max pwm
-	DATA[1]=0x03;//little endian 0x03FF sent
-	DATA[0]=0xFF;
-	c_io_herkulex_write(RAM,ID,REG_MAX_PWM,2,DATA);
-
-	/** set overload pwm register, if overload_pwm>1023, overload is never
-	 * activated this is good for data acquisition, but may not be the case for
-	 * the tilt-rotor actualy flying.
-	 */
-	DATA[0]=0xFF;
-	DATA[1]=0x03;//little endian, 2048 sent
-	c_io_herkulex_write(RAM,ID,REG_OVERLOAD_PWM_THRESHOLD,1,DATA);
-
-	c_io_herkulex_set_torque_control(ID,TORQUE_ON);//set torque on
-
-	c_common_utils_delayms(50);
-
-	c_io_herkulex_set_goal_position(ID,0);
 
 	/*Troca o id do servo, descomentar so para trocar
 	 * Se os dois servos tem o mesmo id é preciso desconecta um deles pra trocar o id
