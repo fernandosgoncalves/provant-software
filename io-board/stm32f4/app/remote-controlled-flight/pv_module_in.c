@@ -25,7 +25,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define MODULE_PERIOD	   15//ms
+#define MODULE_PERIOD	   20//ms
 #define USART_BAUDRATE     115200
 #define QUEUE_SIZE 500
 USART_TypeDef *USARTn = USART1;
@@ -207,16 +207,16 @@ void module_in_run()
     /*----------------------Tratamento dos servos---------------------*/
     //Leitura da posicao e velocidade atual dos servo motores
 
-    if (c_io_herkulex_read_data(oInputData.servoRight.ID)){
-    	oInputData.servoRight.angularSpeed = c_io_herkulex_get_velocity(oInputData.servoRight.ID);
-    	oInputData.servoRight.angle        = c_io_herkulex_get_position(oInputData.servoRight.ID);
-    	oInputData.servoRight.status_error = c_io_herkulex_get_status_error();
-    	oInputData.servoRight.status_detai = c_io_herkulex_get_status_detail();
-    	if (oInputData.servoRight.status_error) {
-    		c_io_herkulex_clear(oInputData.servoRight.ID);
-    	}
-
-    }
+//    if (c_io_herkulex_read_data(oInputData.servoRight.ID)){
+//    	oInputData.servoRight.angularSpeed = c_io_herkulex_get_velocity(oInputData.servoRight.ID);
+//    	oInputData.servoRight.angle        = c_io_herkulex_get_position(oInputData.servoRight.ID);
+//    	oInputData.servoRight.status_error = c_io_herkulex_get_status_error();
+//    	oInputData.servoRight.status_detai = c_io_herkulex_get_status_detail();
+//    	if (oInputData.servoRight.status_error) {
+//    		c_io_herkulex_clear(oInputData.servoRight.ID);
+//    	}
+//
+//    }
 
 //    c_common_utils_delayus(100);
 //    if (c_io_herkulex_read_data(oInputData.servoLeft.ID)){

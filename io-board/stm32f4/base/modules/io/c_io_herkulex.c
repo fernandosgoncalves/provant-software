@@ -136,6 +136,7 @@ uint8_t data_addr;
 uint8_t data_length;
 uint8_t status_error;
 uint8_t status_detail;
+int lastnow;
 
 //for use with read_data function
 float position;
@@ -245,19 +246,43 @@ void send() {
 
 uint8_t receive() {// precisa de um timeout
 	int i=0;
-	uint8_t lastByte = 0, inByte = 0, ok=0, size = 30;
+	long deltanow;
+//	uint8_t lastByte = 0, inByte = 0, ok=0, size = 30;
+	uint8_t lastByte = 0, inByte = 0, ok=0;
 	long now = c_common_utils_millis();
-	long timeOut = now + 10;
+	//deltanow=lastnow-now;
+	long timeOut = now + 1;
 	//while(c_common_usart_read(usartx)!=0xFF);
 	//if (c_common_usart_read(usartx) != 0xFF) return 0;
 	//BUFFER[0]=0xFF;
 	//BUFFER[1]=0xFF;
 	//i=2;
 	/////////////////////////////////
+//	while (now<=timeOut && i<size) {
+//		//verifica quando o primeiro byte chegou
+//		while (!c_common_usart_available(usartx) && deltanow<=timeOut){
+//			lastnow=now;
+//			now=c_common_utils_millis();
+//			deltanow=lastnow-now;
+//		}
+//		lastByte=inByte;
+//		inByte = c_common_usart_read(usartx);
+//		if (!ok && inByte == 0xFF && lastByte == 0xFF ) {
+//			BUFFER[0]=0xFF;
+//			i=1;
+//			ok=1;
+//		}
+//		if (ok) {
+//			BUFFER[i] = inByte;
+//			if (i==2) size=BUFFER[2];
+//			i++;
+//		}
+//	}
+	//////////////////////////////////
+	//verifica quando o primeiro byte chegou
+	while (!c_common_usart_available(usartx) && now<=timeOut)
+		now=c_common_utils_millis();
 	while (now<=timeOut && i<size) {
-		//verifica quando o primeiro byte chegou
-		while (!c_common_usart_available(usartx) && now<=timeOut)
-			now=c_common_utils_millis();
 		lastByte=inByte;
 		inByte = c_common_usart_read(usartx);
 		if (!ok && inByte == 0xFF && lastByte == 0xFF ) {
@@ -271,11 +296,6 @@ uint8_t receive() {// precisa de um timeout
 			i++;
 		}
 	}
-	//////////////////////////////////
-	//verifica quando o primeiro byte chegou
-//	while (!c_common_usart_available(usartx) && now<=timeOut)
-//		now=c_common_utils_millis();
-
 
 	if (now>=timeOut) {
 		return 0;
@@ -390,6 +410,7 @@ void c_io_herkulex_init(USART_TypeDef *usartn, int baudrate)
 
 	torque_status[0]=0;
 	torque_status[1]=0;
+	lastnow=c_common_utils_millis();
 }
 
 void c_io_herkulex_config_ack_policy(char servo_id, char policy) {

@@ -87,7 +87,7 @@ void module_co_run()
 {
   unsigned int heartBeat=0;
   /* Passa os valores davariavel compartilha para a variavel iInputData */
-  xQueueReceive(pv_interface_co.iInputData, &iInputData, 0);
+  //xQueueReceive(pv_interface_co.iInputData, &iInputData, 0);
 
   /* Inicializa os dados da atuação*/
   oControlOutputData.actuation.servoRight = 0;
@@ -116,21 +116,22 @@ void module_co_run()
 
   while(1) 
   {
+	  lastWakeTime = xTaskGetTickCount();
 	 /* Variavel para debug */
-	 heartBeat+=1;
+	// heartBeat+=1;
 
 	/* Passa os valores davariavel compartilha para a variavel iInputData */
-    xQueueReceive(pv_interface_co.iInputData, &iInputData, 0);
+   // xQueueReceive(pv_interface_co.iInputData, &iInputData, 0);
 
     /* Leitura do numero de ciclos atuais */
-	lastWakeTime = xTaskGetTickCount();
+	//lastWakeTime = xTaskGetTickCount();
 
 	/*-------------------Calculo do controle------------------------------*/
 
 
 	/*-------------------Escrita dos servos-------------------------------*/
-	oControlOutputData.actuation.servoRight=((float)iInputData.receiverOutput.joystick[1]/100)*1000;
-	oControlOutputData.actuation.servoLeft=oControlOutputData.actuation.servoRight;
+	//oControlOutputData.actuation.servoRight=(iInputData.receiverOutput.joystick[1]/100.0f)*1000.0f;
+	//oControlOutputData.actuation.servoLeft=oControlOutputData.actuation.servoRight;
 		/**
 	 * Leitura de dados
 	 */
@@ -243,14 +244,14 @@ void module_co_run()
 //	}
 
 
-    unsigned int timeNow=xTaskGetTickCount();
-    oControlOutputData.cicleTime                  = timeNow - lastWakeTime;
+//    unsigned int timeNow=xTaskGetTickCount();
+//    oControlOutputData.cicleTime                  = timeNow - lastWakeTime;
 
     /* toggle pin for debug */
-    c_common_gpio_toggle( LED_builtin_io);
-
-    if(pv_interface_co.oControlOutputData != 0)
-      xQueueOverwrite(pv_interface_co.oControlOutputData, &oControlOutputData);
+//    c_common_gpio_toggle( LED_builtin_io);
+//
+//    if(pv_interface_co.oControlOutputData != 0)
+//      xQueueOverwrite(pv_interface_co.oControlOutputData, &oControlOutputData);
 
     /* A thread dorme ate o tempo final ser atingido */
     vTaskDelayUntil( &lastWakeTime, MODULE_PERIOD / portTICK_RATE_MS);
