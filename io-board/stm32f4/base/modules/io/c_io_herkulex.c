@@ -148,8 +148,8 @@ float velocity;
  */
 uint8_t status;//informa se pacotes foram recebidos,
 
-uint8_t BUFFER[100];
-uint8_t DATA[100];
+uint8_t BUFFER[43];
+uint8_t DATA[43];
 
 //Pacote de
 pv_sjog_herkulex jog_packet;
@@ -226,7 +226,9 @@ uint8_t  c_io_herkulex_read(char mem, char servo_id, char reg_addr, unsigned cha
 	status=1;
 	//send() envia comando de requisição de leitura
 	serialize_io();
+	c_common_usart_flush(usartx);
 	send();
+
 	//le os dados enviados pelo servo
 	zera_buffer();
 	status = receive();
@@ -251,38 +253,20 @@ uint8_t receive() {// precisa de um timeout
 	uint8_t lastByte = 0, inByte = 0, ok=0;
 	long now = c_common_utils_millis();
 	//deltanow=lastnow-now;
-	long timeOut = now + 1;
+	long timeOut = now + 5;
 	//while(c_common_usart_read(usartx)!=0xFF);
 	//if (c_common_usart_read(usartx) != 0xFF) return 0;
 	//BUFFER[0]=0xFF;
 	//BUFFER[1]=0xFF;
 	//i=2;
 	/////////////////////////////////
-//	while (now<=timeOut && i<size) {
-//		//verifica quando o primeiro byte chegou
-//		while (!c_common_usart_available(usartx) && deltanow<=timeOut){
-//			lastnow=now;
-//			now=c_common_utils_millis();
-//			deltanow=lastnow-now;
-//		}
-//		lastByte=inByte;
-//		inByte = c_common_usart_read(usartx);
-//		if (!ok && inByte == 0xFF && lastByte == 0xFF ) {
-//			BUFFER[0]=0xFF;
-//			i=1;
-//			ok=1;
-//		}
-//		if (ok) {
-//			BUFFER[i] = inByte;
-//			if (i==2) size=BUFFER[2];
-//			i++;
-//		}
-//	}
-	//////////////////////////////////
-	//verifica quando o primeiro byte chegou
-	while (!c_common_usart_available(usartx) && now<=timeOut)
-		now=c_common_utils_millis();
 	while (now<=timeOut && i<size) {
+//		//verifica quando o primeiro byte chegou
+//		while (!c_common_usart_available(usartx) && now<=timeOut){
+//			now=c_common_utils_millis();
+//		}
+	while(c_common_usart_available(usartx) && now<=timeOut){
+		now=c_common_utils_millis();
 		lastByte=inByte;
 		inByte = c_common_usart_read(usartx);
 		if (!ok && inByte == 0xFF && lastByte == 0xFF ) {
@@ -296,13 +280,16 @@ uint8_t receive() {// precisa de um timeout
 			i++;
 		}
 	}
+	now=c_common_utils_millis();
+	}
+	//////////////////////////////////
 
 	if (now>=timeOut) {
 		return 0;
 	} else {
 		return 1;
 	}
-	c_common_usart_flush(usartx);
+
 
 }
 

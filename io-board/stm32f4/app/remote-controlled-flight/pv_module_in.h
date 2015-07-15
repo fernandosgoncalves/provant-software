@@ -46,7 +46,7 @@
 //#define SONAR_FILTER_2_ORDER_10HZ
 
 /*Define o tempo de init */
-#define INIT_ITERATIONS 1000 //For a period of 5ms, it is 5 seconds
+#define INIT_ITERATIONS 2 //For a period of 5ms, it is 5 seconds
 
 /* Includes ------------------------------------------------------------------*/
 

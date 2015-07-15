@@ -25,18 +25,20 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define MODULE_PERIOD	   20//ms
+#define MODULE_PERIOD	   500//ms
 #define USART_BAUDRATE     115200
 #define QUEUE_SIZE 500
 USART_TypeDef *USARTn = USART1;
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 portTickType lastWakeTime;
+portTickType nowWakeTime;
 char str[256];
 GPIOPin LED_builtin_io;
 //GPIOPin debugPin;
 float attitude_quaternion[4]={1,0,0,0};
 char DATA[100];
+long delta;
 /* Output Message */
 pv_msg_input oInputData;
 pv_msg_controlOutput iControlOutputData;
@@ -206,29 +208,19 @@ void module_in_run()
 
     /*----------------------Tratamento dos servos---------------------*/
     //Leitura da posicao e velocidade atual dos servo motores
+    if (!oInputData.init)
+    	if (c_io_herkulex_read_data(oInputData.servoRight.ID )){
+    		oInputData.servoRight.angularSpeed = c_io_herkulex_get_velocity(oInputData.servoRight.ID);
+    		oInputData.servoRight.angle        = c_io_herkulex_get_position(oInputData.servoRight.ID);
+    		oInputData.servoRight.status_error = c_io_herkulex_get_status_error();
+    		oInputData.servoRight.status_detai = c_io_herkulex_get_status_detail();
+    		if (oInputData.servoRight.status_error)
+    			c_io_herkulex_clear(oInputData.servoRight.ID);
+        }
 
-//    if (c_io_herkulex_read_data(oInputData.servoRight.ID)){
-//    	oInputData.servoRight.angularSpeed = c_io_herkulex_get_velocity(oInputData.servoRight.ID);
-//    	oInputData.servoRight.angle        = c_io_herkulex_get_position(oInputData.servoRight.ID);
-//    	oInputData.servoRight.status_error = c_io_herkulex_get_status_error();
-//    	oInputData.servoRight.status_detai = c_io_herkulex_get_status_detail();
-//    	if (oInputData.servoRight.status_error) {
-//    		c_io_herkulex_clear(oInputData.servoRight.ID);
-//    	}
-//
-//    }
 
-//    c_common_utils_delayus(100);
-//    if (c_io_herkulex_read_data(oInputData.servoLeft.ID)){
-//    	oInputData.servoLeft.angularSpeed = -c_io_herkulex_get_velocity(oInputData.servoLeft.ID);
-//    	oInputData.servoLeft.angle        = -c_io_herkulex_get_position(oInputData.servoLeft.ID);
-//    	oInputData.servoLeft.status_error = c_io_herkulex_get_status_error();
-//    	oInputData.servoLeft.status_detai = c_io_herkulex_get_status_detail();
-//    	if (oInputData.servoLeft.status_error) {
-//    		c_io_herkulex_clear(oInputData.servoLeft.ID);
-//        }
+    c_common_utils_delayms(2);
 //
-//    }
 
     // Escrita do torque calculado pelo contorlador junto com
     // Sistema de seguranca para que o servo nao ultrapase os +-90 graus
@@ -238,20 +230,27 @@ void module_in_run()
         c_io_herkulex_set_torque(oInputData.servoLeft.ID,0);
     }
     else{
-
-    	c_common_utils_delayus(10);
-    	if((oInputData.servoLeft.angle>0.9*(PI/2) && iControlOutputData.actuation.servoLeft>0) || (oInputData.servoLeft.angle<-0.9*(PI/2) && iControlOutputData.actuation.servoLeft<0))
-    		c_io_herkulex_set_torque(oInputData.servoLeft.ID,0);
-    	else
-    		c_io_herkulex_set_torque(oInputData.servoLeft.ID,-iControlOutputData.actuation.servoLeft);
-
     	if((oInputData.servoRight.angle>0.9*(PI/2) && iControlOutputData.actuation.servoRight>0) || (oInputData.servoRight.angle<-0.9*(PI/2) && iControlOutputData.actuation.servoRight<0))
     		c_io_herkulex_set_torque(oInputData.servoRight.ID,0);
     	else
     		c_io_herkulex_set_torque(oInputData.servoRight.ID,iControlOutputData.actuation.servoRight);
-
-
     }
+
+//    if((oInputData.servoLeft.angle>0.9*(PI/2) && iControlOutputData.actuation.servoLeft>0) || (oInputData.servoLeft.angle<-0.9*(PI/2) && iControlOutputData.actuation.servoLeft<0))
+//        		c_io_herkulex_set_torque(oInputData.servoLeft.ID,0);
+//        	else
+//        		c_io_herkulex_set_torque(oInputData.servoLeft.ID,-iControlOutputData.actuation.servoLeft);
+
+//    if (c_io_herkulex_read_data(oInputData.servoLeft.ID)){
+//       	oInputData.servoLeft.angularSpeed = -c_io_herkulex_get_velocity(oInputData.servoLeft.ID);
+//       	oInputData.servoLeft.angle        = -c_io_herkulex_get_position(oInputData.servoLeft.ID);
+//       	oInputData.servoLeft.status_error = c_io_herkulex_get_status_error();
+//       	oInputData.servoLeft.status_detai = c_io_herkulex_get_status_detail();
+//       	if (oInputData.servoLeft.status_error) {
+//       		c_io_herkulex_clear(oInputData.servoLeft.ID);
+//           }
+//
+//    }
 
     /*----------------------Tratamento da Referencia---------------------*/
 
@@ -363,6 +362,8 @@ void module_in_run()
 
     /* A thread dorme ate o tempo final ser atingido */
 	vTaskDelayUntil( &lastWakeTime, (MODULE_PERIOD / portTICK_RATE_MS));
+	nowWakeTime=xTaskGetTickCount();
+	delta=lastWakeTime-nowWakeTime;
 	}
 }
 /* IRQ handlers ------------------------------------------------------------- */
