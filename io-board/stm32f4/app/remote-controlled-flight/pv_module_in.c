@@ -25,7 +25,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define MODULE_PERIOD	   5//ms
+#define MODULE_PERIOD	   10//ms
 #define USART_BAUDRATE     115200
 #define QUEUE_SIZE 500
 USART_TypeDef *USARTn = USART1;
@@ -203,16 +203,19 @@ void module_in_run()
 
     /*----------------------Tratamento dos servos---------------------*/
     //Leitura da posicao e velocidade atual dos servo motores
-
-//    if (c_io_herkulex_read_data(oInputData.servoRight.ID)){
-//    	oInputData.servoRight.angularSpeed = c_io_herkulex_get_velocity(oInputData.servoRight.ID);
-//    	oInputData.servoRight.angle        = c_io_herkulex_get_position(oInputData.servoRight.ID);
-//    	oInputData.servoRight.status_error = c_io_herkulex_get_status_error();
-//    	oInputData.servoRight.status_detai = c_io_herkulex_get_status_detail();
-//    	if (oInputData.servoRight.status_error) {
-//    		c_io_herkulex_clear(oInputData.servoRight.ID);
-//    	}
-//    }
+    if (!oInputData.init){
+    //if (c_io_herkulex_read_data(oInputData.servoRight.ID)){
+    	//oInputData.servoRight.angularSpeed = c_io_herkulex_get_velocity(oInputData.servoRight.ID);
+    	//oInputData.servoRight.angle        = c_io_herkulex_getAngle(oInputData.servoRight.ID);
+    	oInputData.servoRight.angle        = c_io_herkulex_getAngle(oInputData.servoRight.ID);
+    	//c_common_utils_delayms(2);
+    	oInputData.servoLeft.angle        = c_io_herkulex_getAngle(oInputData.servoLeft.ID);
+    	//oInputData.servoRight.status_error = c_io_herkulex_get_status_error();
+    	//oInputData.servoRight.status_detai = c_io_herkulex_get_status_detail();
+    	//if (oInputData.servoRight.status_error) {
+    		//c_io_herkulex_clear(oInputData.servoRight.ID);
+    	//}
+    //}
 //
 //    if (c_io_herkulex_read_data(oInputData.servoLeft.ID)){
 //    	oInputData.servoLeft.angularSpeed = -c_io_herkulex_get_velocity(oInputData.servoLeft.ID);
@@ -224,25 +227,28 @@ void module_in_run()
 //        }
 //    	leitura=1;
 //    }
-
+    }
+    //c_common_utils_delayms(2);
     // Escrita do torque calculado pelo contorlador junto com
     // Sistema de seguranca para que o servo nao ultrapase os +-90 graus
     if (oInputData.init){
-    	c_io_herkulex_setTorqueOne(oInputData.servoRight.ID,0,0,0);
-    	c_io_herkulex_setTorqueOne(oInputData.servoLeft.ID,0,0,0);
+    	//c_io_herkulex_setTorqueOne(oInputData.servoRight.ID,0,0,1);
+    	//c_io_herkulex_setTorqueOne(oInputData.servoLeft.ID,0,0,1);
+    	c_io_herkulex_clearError(BROADCAST_ID);
     }
     else{
 
-    	c_common_utils_delayus(10);
-    	if((oInputData.servoLeft.angle>0.9*(PI/2) && iControlOutputData.actuation.servoLeft>0) || (oInputData.servoLeft.angle<-0.9*(PI/2) && iControlOutputData.actuation.servoLeft<0))
-    		c_io_herkulex_setTorqueOne((int)oInputData.servoLeft.ID,0,0,0);
-    	else
-    		c_io_herkulex_setTorqueOne((int)oInputData.servoLeft.ID,-iControlOutputData.actuation.servoLeft,0,0);
+    	//c_common_utils_delayus(10);
+//    	if((oInputData.servoLeft.angle>0.9*(PI/2) && iControlOutputData.actuation.servoLeft>0) || (oInputData.servoLeft.angle<-0.9*(PI/2) && iControlOutputData.actuation.servoLeft<0))
+//    		c_io_herkulex_setTorqueOne(oInputData.servoLeft.ID,0,0,3);
+//    	else
+    		c_io_herkulex_setTorqueOne(oInputData.servoLeft.ID,-iControlOutputData.actuation.servoLeft,0,2);
 
-    	if((oInputData.servoRight.angle>0.9*(PI/2) && iControlOutputData.actuation.servoRight>0) || (oInputData.servoRight.angle<-0.9*(PI/2) && iControlOutputData.actuation.servoRight<0))
-    		c_io_herkulex_setTorqueOne((int)oInputData.servoRight.ID,0,0,0);
-    	else
-    		c_io_herkulex_setTorqueOne((int)oInputData.servoRight.ID,iControlOutputData.actuation.servoRight,0,0);
+//    	if((oInputData.servoRight.angle>0.9*(PI/2) && iControlOutputData.actuation.servoRight>0) || (oInputData.servoRight.angle<-0.9*(PI/2) && iControlOutputData.actuation.servoRight<0))
+//    		c_io_herkulex_setTorqueOne(oInputData.servoRight.ID,0,0,3);
+//    	else
+    		c_io_herkulex_setTorqueOne(oInputData.servoRight.ID,iControlOutputData.actuation.servoRight,0,1);
+//    	c_common_utils_delayms(1);
 
 
     }

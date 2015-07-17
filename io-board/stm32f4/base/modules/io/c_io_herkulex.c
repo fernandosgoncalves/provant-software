@@ -25,24 +25,28 @@
 /* Private variables ---------------------------------------------------------*/
 USART_TypeDef* USARTx;
 uint8_t data[30];
-uint8_t dataEx[58];
-uint8_t moveData[50];
-int pSize;
-int pID;
-int cmd;
-int lenghtString;
-int ck1;
-int ck2;
-int conta;
-int XOR;
-int playTime;
+uint8_t dataEx[30];
+uint8_t moveData[30];
+uint8_t pSize;
+uint8_t pID;
+uint8_t cmd;
+uint8_t lenghtString;
+uint8_t ck1;
+uint8_t ck2;
+uint8_t conta;
+uint8_t XOR;
+uint8_t playTime;
+uint8_t auxcheck1;
+uint8_t auxcheck2;
+int lastTime;
 /* Private function prototypes -----------------------------------------------*/
-int c_io_herkulex_checksum1(uint8_t* data, int lenghtString);
+int c_io_herkulex_checksum1(char* data, int lenghtString);
 int c_io_herkulex_checksum2(int XOR);
-void c_io_herkulex_addData(int GoalLSB, int GoalMSB, int set, int servoID);
-void c_io_herkulex_sendData();
-uint8_t c_io_herkulex_readData();
-void  c_io_herkulex_write_S_JOG(int pTime);
+void c_io_herkulex_addData(char GoalLSB, char GoalMSB, char set, char servoID);
+void c_io_herkulex_sendData(char* buffer,int lenght);
+uint8_t c_io_herkulex_readData(int lenght);
+void  c_io_herkulex_write_S_JOG(char pTime);
+void c_io_herkulex_clearBuffer(char* buffer,int lenght);
 
 /* Private functions ---------------------------------------------------------*/
 /* Exported functions definitions --------------------------------------------*/
@@ -68,15 +72,19 @@ void c_io_herkulex_init(USART_TypeDef *usartn, int baudrate){
 
 // initialize servos
 void c_io_herkulex_initialize(){
-	uint8_t data_aux[2];
+	char data_aux[2];
 	conta=0;
 	lenghtString=0;
-
+    c_io_herkulex_clearError(BROADCAST_ID);
 	//c_common_utils_delayms(12);
 	c_io_herkulex_reboot(BROADCAST_ID);
-	c_common_utils_delayus(100);
-	c_io_herkulex_torqueON(BROADCAST_ID);//torque free
+	c_common_utils_delayms(1000);
+	//Torque control
+	data_aux[0]=TORQUE_FREE;
+	c_io_herkulex_write_RAM(BROADCAST_ID,TORQUE_CONTROL_RAM,data_aux,1);
+	//ACK only read
 	c_io_herkulex_ACK(1);
+	//Aceleration ratio
 	data_aux[0]=0;
 	c_io_herkulex_write_RAM(BROADCAST_ID,ACCELERATION_RATIO_RAM,data_aux,1);
 	//set no acceleration time
@@ -99,7 +107,8 @@ void c_io_herkulex_initialize(){
 	data_aux[0]=0xFF;
 	data_aux[1]=0x03;//little endian, 2048 sent
 	c_io_herkulex_write_RAM(BROADCAST_ID,OVERLOAD_PWM_THRESHOLD_RAM,data_aux,2);
-    data_aux[0]=TORQUE_ON;
+	c_common_utils_delayus(500);
+	data_aux[0]=TORQUE_ON;
     c_io_herkulex_write_RAM(BROADCAST_ID,TORQUE_CONTROL_RAM,data_aux,1);//set torque on
 	c_common_utils_delayus(500);
 //	c_io_herkulex_set_goal_position(ID,0);
@@ -107,7 +116,7 @@ void c_io_herkulex_initialize(){
 }
 
 // stat
-uint8_t c_io_herkulex_status(int servoID){
+char c_io_herkulex_status(char servoID){
 
 	pSize = 0x07;			//3.Packet size
 	pID   = servoID;			//4.Servo ID - 0XFE=All servos
@@ -149,7 +158,7 @@ uint8_t c_io_herkulex_status(int servoID){
 
 
 // ACK  - 0=No Replay, 1=Only reply to READ CMD, 2=Always reply
-void c_io_herkulex_ACK(int valueACK)
+void c_io_herkulex_ACK(char valueACK)
 {
 	pSize = 0x0A;               // 3.Packet size 7-58
 	pID   = 0xFE;	            // 4. Servo ID
@@ -221,7 +230,7 @@ uint8_t c_io_herkulex_model()
 }
 
 // setID - Need to restart the servo
-void c_io_herkulex_set_ID(int ID_Old, int ID_New)
+void c_io_herkulex_set_ID(char ID_Old,char ID_New)
 {
 	pSize = 0x0A;               // 3.Packet size 7-58
 	pID   = ID_Old;		        // 4. Servo ID OLD - original servo ID
@@ -250,7 +259,7 @@ void c_io_herkulex_set_ID(int ID_Old, int ID_New)
 }
 
 // clearError
-void c_io_herkulex_clearError(int servoID)
+void c_io_herkulex_clearError(char servoID)
 {
 	pSize = 0x0B;               // 3.Packet size 7-58
 	pID   = servoID;     		// 4. Servo ID - 253=all servos
@@ -281,7 +290,7 @@ void c_io_herkulex_clearError(int servoID)
 }
 
 // torque on -
-void c_io_herkulex_torqueON(int servoID){
+void c_io_herkulex_torqueON(char servoID){
 	pSize = 0x0A;               // 3.Packet size 7-58
 	pID   = servoID;            // 4. Servo ID
 	cmd   = RAM_WRITE_REQ;      // 5. CMD
@@ -308,7 +317,7 @@ void c_io_herkulex_torqueON(int servoID){
 }
 
 // torque off - the torque is FREE, not Break
-void c_io_herkulex_torqueOFF(int servoID)
+void c_io_herkulex_torqueOFF(char servoID)
 {
 	pSize = 0x0A;               // 3.Packet size 7-58
 	pID   = servoID;            // 4. Servo ID
@@ -337,7 +346,7 @@ void c_io_herkulex_torqueOFF(int servoID)
 }
 
 // reboot single servo - pay attention 253 - all servos doesn't work!
-void c_io_herkulex_reboot(int servoID) {
+void c_io_herkulex_reboot(char servoID) {
 
     pSize = 0x07;               // 3.Packet size 7-58
 	pID   = servoID;     	    // 4. Servo ID - 253=all servos
@@ -358,7 +367,7 @@ void c_io_herkulex_reboot(int servoID) {
 }
 
 // LED  - see table of colors
-void c_io_herkulex_setLed(int servoID, int valueLed)
+void c_io_herkulex_setLed(char servoID, char valueLed)
 {
 	pSize   = 0x0A;               // 3.Packet size 7-58
 	pID     = servoID;            // 4. Servo ID
@@ -386,11 +395,11 @@ void c_io_herkulex_setLed(int servoID, int valueLed)
 }
 
 // move one servo at goal position 0 - 1024
-void c_io_herkulex_setAngleOne(int servoID, float angle, int pTime, int iLed)
+void c_io_herkulex_setAngleOne(char servoID, float angle, char pTime, int iLed)
 {
 	if (angle > 160.0|| angle < -160.0)
 		return;
-	int Goal = (int)((angle*180)/(0.325*PI)) + 512;
+	uint16_t Goal = (uint16_t)(((angle*180)/(0.325*PI)) + 512);
 
 	if (Goal > 1023 || Goal < 0)
 		return;              // speed (goal) non correct
@@ -399,8 +408,8 @@ void c_io_herkulex_setAngleOne(int servoID, float angle, int pTime, int iLed)
 		return;
 
 	// Position definition
-	int posLSB=Goal & 0X00FF;								// MSB Pos
-	int posMSB=(Goal & 0XFF00) >> 8;						// LSB Pos
+	uint8_t posLSB=Goal & 0X00FF;								// MSB Pos
+	uint8_t posMSB=(Goal & 0XFF00) >> 8;						// LSB Pos
 
 	//led
 	int iBlue=0;
@@ -417,9 +426,9 @@ void c_io_herkulex_setAngleOne(int servoID, float angle, int pTime, int iLed)
 		iRed=1;
 		break;
 	}
-	int SetValue=iGreen*4+iBlue*8+iRed*16;	//assign led value
+	uint8_t SetValue=iGreen*4+iBlue*8+iRed*16;	//assign led value
 
-	playTime=(int)((float)pTime/11.2);		// 8. Execution time
+	playTime=(uint8_t)((float)pTime/11.2);		// 8. Execution time
 
 	pSize = 0x0C;          			    	// 3.Packet size 7-58
 	cmd   = S_JOG_REQ;              				// 5. CMD
@@ -455,21 +464,21 @@ void c_io_herkulex_setAngleOne(int servoID, float angle, int pTime, int iLed)
 }
 
 // move one servo with continous rotation
-void c_io_herkulex_setTorqueOne(int servoID, long int Goal, int pTime, int iLed)
+void c_io_herkulex_setTorqueOne(char servoID,int Goal,char pTime, int iLed)
 {
+  int GoalSpeedSign;
   if (Goal > 1023 || Goal < -1023) return;              // speed (goal) non correct
   if ((pTime <0) || (pTime > 2856)) return;
 
-  long int GoalSpeedSign;
   if (Goal < 0) {
-    GoalSpeedSign = (-1)* Goal ;
+    GoalSpeedSign = (-1)*Goal;
     GoalSpeedSign |= 0x4000;  //bit n\B014
   }
   else {
     GoalSpeedSign = Goal;
   }
-  int speedGoalLSB=GoalSpeedSign & 0X00FF; 		       // MSB speedGoal
-  int speedGoalMSB=(GoalSpeedSign & 0xFF00) >> 8;      // LSB speedGoal
+  uint8_t speedGoalLSB=GoalSpeedSign & 0X00FF; 		       // MSB speedGoal
+  uint8_t speedGoalMSB=(GoalSpeedSign & 0xFF00) >> 8;      // LSB speedGoal
 
   //led
   int iBlue=0;
@@ -486,18 +495,18 @@ void c_io_herkulex_setTorqueOne(int servoID, long int Goal, int pTime, int iLed)
     iRed=1;
     break;
   }
-  int SetValue=2+iGreen*4+iBlue*8+iRed*16;		//assign led value
+  uint8_t SetValue=(uint8_t)(2+iGreen*4+iBlue*8+iRed*16);		//assign led value
 
-  playTime=(int)((float)pTime/11.2);				// 8. Execution time
+  playTime=(uint8_t)((float)pTime/11.2);				// 8. Execution time
 
   pSize = 0x0C;              					// 3.Packet size 7-58
   cmd   = S_JOG_REQ;      					        // 5. CMD
   pID=servoID;
 
-  data[0]=(uint8_t)speedGoalLSB;            			    // 8. speedLSB
-  data[1]=(uint8_t)speedGoalMSB;              			// 9. speedMSB
-  data[2]=(uint8_t)SetValue;                          	// 10. Mode=0;
-  data[3]=(uint8_t)servoID;                    			// 11. ServoID
+  data[0]=speedGoalLSB;            			    // 8. speedLSB
+  data[1]=speedGoalMSB;              			// 9. speedMSB
+  data[2]=SetValue;                          	// 10. Mode=0;
+  data[3]=servoID;                    			// 11. ServoID
 
   pID=servoID^playTime;
 
@@ -526,18 +535,18 @@ void c_io_herkulex_setTorqueOne(int servoID, long int Goal, int pTime, int iLed)
 }
 
 // move all servo at the same time to a position: servo list building
-void c_io_herkulex_setAngleAll(int servoID, float angle, int iLed)
+void c_io_herkulex_setAngleAll(char servoID, float angle, int iLed)
 {
 	if (angle > 160.0|| angle < -160.0)
 		return; // out of the range
-	int Goal = (int)((angle*180)/(0.325*PI)) + 512;
+	uint8_t Goal = (uint8_t)((angle*180)/(0.325*PI)) + 512;
 
-	int iMode=0;                   //mode=position
-	int iStop=0;                   //stop=0
+	uint8_t iMode=0x00;                   //mode=position
+	uint8_t iStop=0x00;                   //stop=0
 
 	// Position definition
-	int posLSB=Goal & 0X00FF;					// MSB Pos
-	int posMSB=(Goal & 0XFF00) >> 8;			// LSB Pos
+	uint8_t posLSB=Goal & 0X00FF;					// MSB Pos
+	uint8_t posMSB=(Goal & 0XFF00) >> 8;			// LSB Pos
 
 	//led
 	int iBlue=0;
@@ -555,13 +564,13 @@ void c_io_herkulex_setAngleAll(int servoID, float angle, int iLed)
 		break;
 	}
 
-	int SetValue=iStop+iMode*2+iGreen*4+iBlue*8+iRed*16;	//assign led value
+	uint8_t SetValue=(uint8_t)(iStop+iMode*2+iGreen*4+iBlue*8+iRed*16);	//assign led value
 
 	c_io_herkulex_addData(posLSB, posMSB, SetValue, servoID);	//add servo data to list, pos mode
 }
 
 // move all servo at the same time with different torques: servo list building
-void c_io_herkulex_setTorqueAll(int servoID, int Goal, int iLed)
+void c_io_herkulex_setTorqueAll(char servoID, int Goal, int iLed)
 {
 	  if (Goal > 1023 || Goal < -1023)
 		return;								 //-1023 <--> 1023 range
@@ -606,12 +615,12 @@ void c_io_herkulex_setTorqueAll(int servoID, int Goal, int iLed)
 
 
 // get Position in rad
-float c_io_herkulex_getAngle(int servoID) {
+float c_io_herkulex_getAngle(char servoID) {
 	int Position  = 0;
-
+	int dataread;
     pSize = 0x09;               // 3.Packet size 7-58
 	pID   = servoID;     	    // 4. Servo ID - 253=all servos
-	cmd   = RAM_READ_REQ;           // 5. CMD
+	cmd   = RAM_READ_REQ;       // 5. CMD
 	data[0]=0x3A;               // 8. Address
 	data[1]=0x02;               // 9. Lenght
 
@@ -632,18 +641,20 @@ float c_io_herkulex_getAngle(int servoID) {
 
 	c_io_herkulex_sendData(dataEx, pSize);
 
-	c_common_utils_delayus(100);
-    c_io_herkulex_readData(13);
+
+    dataread=c_io_herkulex_readData(13);
 
 	pSize = dataEx[2];           // 3.Packet size 7-58
 	pID   = dataEx[3];           // 4. Servo ID
 	cmd   = dataEx[4];           // 5. CMD
-	data[0]=dataEx[7];
-    data[1]=dataEx[8];
-    data[2]=dataEx[9];
-    data[3]=dataEx[10];
-    data[4]=dataEx[11];
-    data[5]=dataEx[12];
+	auxcheck1   = dataEx[5];
+	auxcheck2   = dataEx[6];
+	data[0] = dataEx[7];
+    data[1] = dataEx[8];
+    data[2] = dataEx[9];
+    data[3] = dataEx[10];
+    data[4] = dataEx[11];
+    data[5] = dataEx[12];
     lenghtString=6;
 
     ck1=c_io_herkulex_checksum1(data,lenghtString);	//6. Checksum1
@@ -658,7 +669,7 @@ float c_io_herkulex_getAngle(int servoID) {
 }
 
 // get Position in rad/seg
-float c_io_herkulex_getSpeed(int servoID){
+float c_io_herkulex_getSpeed(char servoID){
 	int speed  = 0;
 
 	pSize = 0x09;               // 3.Packet size 7-58
@@ -685,7 +696,7 @@ float c_io_herkulex_getSpeed(int servoID){
 	c_io_herkulex_sendData(dataEx, pSize);
 
 	c_common_utils_delayus(100);
-	c_io_herkulex_readData(13);
+	c_io_herkulex_readData(11);
 
 	pSize = dataEx[2];           // 3.Packet size 7-58
 	pID   = dataEx[3];           // 4. Servo ID
@@ -710,7 +721,7 @@ float c_io_herkulex_getSpeed(int servoID){
 }
 
 // write registry in the RAM: one byte
-void c_io_herkulex_write_RAM(int servoID, int address,uint8_t* writeBytes,int lenght)
+void c_io_herkulex_write_RAM(char servoID,char address,char* writeBytes,int lenght)
 {
   pSize = 0x0A;               	// 3.Packet size 7-58
   pID   = servoID;     			// 4. Servo ID - 253=all servos
@@ -743,7 +754,7 @@ void c_io_herkulex_write_RAM(int servoID, int address,uint8_t* writeBytes,int le
 }
 
 // write registry in the EEP memory (ROM): one byte
-void c_io_herkulex_write_EEP(int servoID, int address, uint8_t* writeBytes,int lenght)
+void c_io_herkulex_write_EEP(char servoID, char address, char* writeBytes,int lenght)
 {
   pSize = 0x0A;                  // 3.Packet size 7-58
   pID   = servoID;     	         // 4. Servo ID - 253=all servos
@@ -778,7 +789,7 @@ void c_io_herkulex_write_EEP(int servoID, int address, uint8_t* writeBytes,int l
 /* Private functions ---------------------------------------------------------*/
 
 // checksum1
-int c_io_herkulex_checksum1(uint8_t* data, int lenghtString){
+int c_io_herkulex_checksum1(char* data, int lenghtString){
 	XOR = 0;
 	  XOR = XOR ^ pSize;
 	  XOR = XOR ^ pID;
@@ -795,7 +806,7 @@ int c_io_herkulex_checksum2(int XOR){
   return (~XOR)&0xFE;
 }
 
-void c_io_herkulex_addData(int GoalLSB, int GoalMSB, int set, int servoID){
+void c_io_herkulex_addData(char GoalLSB, char GoalMSB, char set, char servoID){
   moveData[conta++]=GoalLSB;
   moveData[conta++]=GoalMSB;
   moveData[conta++]=set;
@@ -803,30 +814,53 @@ void c_io_herkulex_addData(int GoalLSB, int GoalMSB, int set, int servoID){
 }
 
 
-void c_io_herkulex_sendData(uint8_t* buffer,int lenght) {
+void c_io_herkulex_sendData(char* buffer,int lenght) {
 	for (int i=0; i < lenght ; ++i)
 		c_common_usart_putchar(USARTx,buffer[i]);
 }
 
 uint8_t c_io_herkulex_readData(int lenght) {
-	long now = c_common_utils_micros();
-	long timeOut = now + 100;
-//	//Time out para recever os dados
-	while (!c_common_usart_available(USARTx) && now<timeOut)
-			now=c_common_utils_micros();
-	for(int i=0;c_common_usart_available(USARTx)==1 && i<lenght;i++){
-			dataEx[i] = c_common_usart_read(USARTx);
+	int i=0 ,beginSave=0, buf=0;
+	bool flag;
+	c_io_herkulex_clearBuffer(dataEx,30);
+	char lastByte=0, inByte=0;
+	//long now = c_common_utils_millis();
+	long now=0;
+	int timeOut = 2;
+	//Time out para recever os dados
+	c_common_utils_delayus(1000);
+	lastTime=now;
+	now=c_common_utils_millis();
+	while (c_common_usart_available2(USARTx)<lenght && (lastTime-now)<timeOut){
+		lastTime=now;
+		now=c_common_utils_millis();
+	}
+	while(c_common_usart_available2(USARTx)>0){
+		lastByte=inByte;
+		inByte = c_common_usart_read(USARTx);
+		dataEx[i] = inByte;
+		if ((beginSave==0) && (inByte == 0xFF) && (lastByte == 0xFF) ){
+			beginSave=1;
+			dataEx[0] = inByte;
+			i=1; 				 // if found new header, begin again
+
+		}
+		if (beginSave==1 && i<lenght) {
+			dataEx[i] = inByte;
+			i++;
+		}
 	}
 	c_common_usart_flush(USARTx);
+	return i;
 }
 
-void  c_io_herkulex_write_S_JOG(int pTime){
+void  c_io_herkulex_write_S_JOG(char pTime){
 	if ((pTime <0) || (pTime > 2856))
 		return;
 
     pSize = 0x08 + conta;     	        // 3.Packet size 7-58
 	cmd   = S_JOG_REQ;		 			// 5. CMD SJOG Write n servo with same execution time
-	playTime=(int)((float)pTime/11.2);  // 8. Execution time
+	playTime=(uint8_t)((float)pTime/11.2);  // 8. Execution time
 
     pID=0xFE^playTime;
     ck1=c_io_herkulex_checksum1(moveData,conta);	    //6. Checksum1
@@ -847,4 +881,11 @@ void  c_io_herkulex_write_S_JOG(int pTime){
 
 	c_io_herkulex_sendData(dataEx, pSize);
 	conta=0; 						    //reset counter
+}
+
+void c_io_herkulex_clearBuffer(char* buffer,int lenght){
+	for (int i=0; i<lenght;i++){
+		buffer[i]=0;
+	}
+
 }

@@ -152,36 +152,36 @@
 //General Conmmands
 void c_io_herkulex_init(USART_TypeDef *usartn, int baudrate);
 void c_io_herkulex_initialize();
-void  c_io_herkulex_ACK(int valueACK);
+void  c_io_herkulex_ACK(char valueACK);
 uint8_t  c_io_herkulex_model();
-void  c_io_herkulex_set_ID(int ID_Old, int ID_New);
-void  c_io_herkulex_clearError(int servoID);
-void  c_io_herkulex_torqueON(int servoID);
-void  c_io_herkulex_torqueOFF(int servoID);
-void  c_io_herkulex_setLed(int servoID, int valueLed);
+void  c_io_herkulex_set_ID(char ID_Old,char ID_New);
+void  c_io_herkulex_clearError(char servoID);
+void  c_io_herkulex_torqueON(char servoID);
+void  c_io_herkulex_torqueOFF(char servoID);
+void  c_io_herkulex_setLed(char servoID, char valueLed);
 
 //Moviments for only one servo
-void  c_io_herkulex_setAngleOne(int servoID, float angle, int pTime, int iLed);
-void  c_io_herkulex_setTorqueOne(int servoID, long int Goal, int pTime, int iLed); // move one servo with continous rotation
+void  c_io_herkulex_setAngleOne(char servoID, float angle, char pTime, int iLed);
+void  c_io_herkulex_setTorqueOne(char servoID, int Goal, char pTime, int iLed); // move one servo with continous rotation
 
 //Moviments for two or more servos
-void  c_io_herkulex_setAngleAll(int servoID, float angle, int iLed);
-void  c_io_herkulex_setTorqueAll(int servoID, int Goal, int iLed);
+void  c_io_herkulex_setAngleAll(char servoID, float angle, int iLed);
+void  c_io_herkulex_setTorqueAll(char servoID, int Goal, int iLed);
 
 //Read data
-float c_io_herkulex_getAngle(int servoID);
-float c_io_herkulex_getSpeed(int servoID);
+float c_io_herkulex_getAngle(char servoID);
+float c_io_herkulex_getSpeed(char servoID);
 
 
 //void  c_io_herkulex_readRegistryEEP(int servoID, int address, int writeByte);
 //void  c_io_herkulex_readRegistryRAM(int servoID, int address, int writeByte);
-void  c_io_herkulex_write_EEP(int servoID, int address, uint8_t* writeBytes,int lenght);
-void  c_io_herkulex_write_RAM(int servoID, int address, uint8_t* writeBytes,int lenght);
+void  c_io_herkulex_write_EEP(char servoID, char address, char* writeBytes,int lenght);
+void  c_io_herkulex_write_RAM(char servoID, char address, char* writeBytes,int lenght);
 //void  c_io_herkulex_write_I_JOG(int servoID, int address, int writeByte);
-void  c_io_herkulex_write_S_JOG(int pTime);
-uint8_t  c_io_herkulex_status(int servoID);
+void  c_io_herkulex_write_S_JOG(char pTime);
+char  c_io_herkulex_status(char servoID);
 //void  c_io_herkulex_rollback(int servoID);
-void  c_io_herkulex_reboot(int servoID);
+void  c_io_herkulex_reboot(char servoID);
 
 #ifdef __cplusplus
 }

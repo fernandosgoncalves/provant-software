@@ -355,6 +355,24 @@ bool c_common_usart_available(USART_TypeDef* USARTx) {
 		return 0;
 }
 
+/** \brief Retorna se existe algum caracter não lido no Ring-Buffer da USART escolhida.
+ *
+ * 	@param USARTx USART a verificar.
+ * 	@return 1 caso haja um caracter não lido, 0 caso contrário.
+ */
+int c_common_usart_available2(USART_TypeDef* USARTx) {
+	if(USARTx == USART1)
+		return usart1_rb_in - usart1_rb_out;
+	else if(USARTx == USART2)
+		return usart2_rb_in - usart2_rb_out;
+	else if(USARTx == USART3)
+		return usart3_rb_in - usart3_rb_out;
+	else if(USARTx == USART6)
+		return usart6_rb_in - usart6_rb_out;
+	else
+		return 0;
+}
+
 /** \brief Retorna o caracter recebido e não-lido mais recente do Ring-Buffer.
  *
  * 	@param USARTx USART a verificar.
