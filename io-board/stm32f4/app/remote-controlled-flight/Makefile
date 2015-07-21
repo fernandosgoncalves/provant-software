@@ -123,7 +123,7 @@ CFlAGS += -DARM_MATH_CM4 -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING
 # verbose flags, all may be commented out
 #CFLAGS += -Wall  -Wunused-value -Wunused-variable -Wunused-but-set-variable #-ftime-report
 # cpp related flags
-CFLAGS += -Og -O0 -ffunction-sections -fdata-sections -fno-exceptions --specs=nano.specs -Wl,--gc-sections 
+CFLAGS += -Og -O0 -ffunction-sections -fdata-sections -fno-exceptions --specs=nano.specs -Wl,--gc-sections  
 CFLAGS += -std=c99 
 CFLAGS += $(BOARD)
 CFLAGS +=-D__FPU_PRESENT

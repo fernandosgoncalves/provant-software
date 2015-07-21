@@ -49,6 +49,8 @@ float c_common_utils_sat(float x, float min, float max);
 void c_common_utils_delayms(int  ms);
 void c_common_utils_delayus(long us);
 
+void c_common_utils_resetSystem();
+
 void c_common_utils_enSysTick();
 long c_common_utils_getSysTickCount();
 long c_common_utils_micros();

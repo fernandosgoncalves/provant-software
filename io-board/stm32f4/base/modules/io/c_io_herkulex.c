@@ -253,6 +253,9 @@ uint8_t receive() {// precisa de um timeout
 	uint8_t lastByte = 0, inByte = 0, ok=0;
 	long now = c_common_utils_millis();
 	//deltanow=lastnow-now;
+	lastTime=now;
+	now=c_common_utils_millis();
+	lastTime-now
 	long timeOut = now + 5;
 	//while(c_common_usart_read(usartx)!=0xFF);
 	//if (c_common_usart_read(usartx) != 0xFF) return 0;

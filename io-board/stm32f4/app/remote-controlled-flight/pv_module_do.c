@@ -31,7 +31,7 @@ portTickType lastWakeTime;
 unsigned int heartBeat=0;
 pv_msg_input iInputData;
 pv_msg_controlOutput iControlOutputData; 
-//GPIOPin debugPin;
+GPIOPin LED3;
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 /* Exported functions definitions --------------------------------------------*/
@@ -52,7 +52,7 @@ void module_do_init()
   pv_interface_do.iControlOutputData  = xQueueCreate(1, sizeof(pv_msg_controlOutput));
 
   /* Pin for debug */
-  //debugPin = c_common_gpio_init(GPIOE, GPIO_Pin_13, GPIO_Mode_OUT);
+  LED3 = c_common_gpio_init(GPIOE, GPIO_Pin_13, GPIO_Mode_OUT); //LD3
 }
 
 /** \brief Função principal do módulo de data out.
@@ -66,9 +66,6 @@ void module_do_run()
 	{
 		lastWakeTime = xTaskGetTickCount();
 		heartBeat++;
-
-		/* toggle pin for debug */
-		//c_common_gpio_toggle(debugPin);
 
 		xQueueReceive(pv_interface_do.iInputData, &iInputData, 0);
 		xQueueReceive(pv_interface_do.iControlOutputData, &iControlOutputData, 0);
@@ -89,7 +86,7 @@ void module_do_run()
 		//c_common_datapr_multwii_sendstack(USART2);
 
 		/* toggle pin for debug */
-		//c_common_gpio_toggle(debugPin);
+		c_common_gpio_toggle(LED3);
 
 		vTaskDelayUntil( &lastWakeTime, (MODULE_PERIOD / portTICK_RATE_MS));
 	}

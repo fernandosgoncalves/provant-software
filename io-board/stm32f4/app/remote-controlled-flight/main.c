@@ -62,6 +62,11 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+//GPIOPin LED4 = c_common_gpio_init(GPIOD, GPIO_Pin_12, GPIO_Mode_OUT); //LD4
+//GPIOPin LED5 = c_common_gpio_init(GPIOD, GPIO_Pin_14, GPIO_Mode_OUT); //LD5
+//GPIOPin LED6 = c_common_gpio_init(GPIOD, GPIO_Pin_15, GPIO_Mode_OUT); //LD6
+//GPIOPin LED7 = c_common_gpio_init(GPIOA, GPIO_Pin_9, GPIO_Mode_OUT); //LD7
+//GPIOPin LED8 = c_common_gpio_init(GPIOD, GPIO_Pin_5, GPIO_Mode_OUT); //LD8
 /* Private function prototypes -----------------------------------------------*/
 void vApplicationTickHook() {};
 void vApplicationIdleHook() {};

@@ -34,7 +34,7 @@ USART_TypeDef *USARTn = USART1;
 portTickType lastWakeTime;
 portTickType nowWakeTime;
 char str[256];
-GPIOPin LED_builtin_io;
+GPIOPin LED4;
 //GPIOPin debugPin;
 float attitude_quaternion[4]={1,0,0,0};
 char DATA[100];
@@ -58,7 +58,7 @@ void servo_init(uint8_t ID);
 void module_in_init() 
 {
 	/* Inicialização do hardware do módulo */
-	LED_builtin_io = c_common_gpio_init(GPIOD, GPIO_Pin_15, GPIO_Mode_OUT);
+	LED4 = c_common_gpio_init(GPIOD, GPIO_Pin_12, GPIO_Mode_OUT); //LD4
 
 	/* Resevar o espaco para a variavel compartilhada */
 	pv_interface_in.oInputData  = xQueueCreate(1, sizeof(pv_msg_input));
@@ -167,7 +167,11 @@ void module_in_run()
 
   	while(1)
 	{
+  	/* Leitura do numero de ciclos atuais */
+  	lastWakeTime = xTaskGetTickCount();
+
   	oInputData.heartBeat=heartBeat+=1;
+
   	/* Passa os valores davariavel compartilha para a variavel iControlOutputData */
   	xQueueReceive(pv_interface_in.iControlOutputData, &iControlOutputData, 0);
 
@@ -175,13 +179,7 @@ void module_in_run()
     if (iterations > INIT_ITERATIONS)
     		oInputData.init = 0; //Sai da fase de inicializacao
 
-    /* toggle pin for debug */
-    c_common_gpio_toggle(LED_builtin_io);
-
-    /* Leitura do numero de ciclos atuais */
-	lastWakeTime = xTaskGetTickCount();
-
-	/*----------------------Tratamento da IMU---------------------*/
+    /*----------------------Tratamento da IMU---------------------*/
     /* Pega e trata os valores da imu */
 //	c_io_imu_getRaw(oInputData.imuOutput.accRaw, oInputData.imuOutput.gyrRaw, oInputData.imuOutput.magRaw,sample_time_gyro_us);
 //	c_datapr_MahonyAHRSupdate(attitude_quaternion,oInputData.imuOutput.gyrRaw[0],oInputData.imuOutput.gyrRaw[1],oInputData.imuOutput.gyrRaw[2],oInputData.imuOutput.accRaw[0],oInputData.imuOutput.accRaw[1],oInputData.imuOutput.accRaw[2],oInputData.imuOutput.magRaw[0],oInputData.imuOutput.magRaw[1],oInputData.imuOutput.magRaw[2],sample_time_gyro_us[0]);
@@ -218,8 +216,17 @@ void module_in_run()
     			c_io_herkulex_clear(oInputData.servoRight.ID);
         }
 
+    if (c_io_herkulex_read_data(oInputData.servoRight.ID )){
+        		oInputData.servoRight.angularSpeed = c_io_herkulex_get_velocity(oInputData.servoRight.ID);
+        		oInputData.servoRight.angle        = c_io_herkulex_get_position(oInputData.servoRight.ID);
+        		oInputData.servoRight.status_error = c_io_herkulex_get_status_error();
+        		oInputData.servoRight.status_detai = c_io_herkulex_get_status_detail();
+        		if (oInputData.servoRight.status_error)
+        			c_io_herkulex_clear(oInputData.servoRight.ID);
+            }
 
-    c_common_utils_delayms(2);
+
+
 //
 
     // Escrita do torque calculado pelo contorlador junto com
@@ -353,8 +360,8 @@ void module_in_run()
 	if (oInputData.init)
 		iterations++;
 
-    /* toggle pin for debug */
-    //c_common_gpio_toggle(LED_builtin_io);
+	/* toggle pin for debug */
+	c_common_gpio_toggle(LED4);
 
     /* Realiza o trabalho de mutex */
 	if(pv_interface_in.oInputData != 0)
