@@ -8,17 +8,17 @@
   *****************************************************************************/
 
 /* Includes ------------------------------------------------------------------*/
-#include "MpcBirotor.h"
+#include "MpcLoad.h"
 /* Private typedef -----------------------------------------------------------*/
-using namespace model;
+using namespace loadmodel;
 using namespace Eigen;
 using namespace qpOASES;
 
-namespace MPCBirotor {
+namespace MPCLOAD {
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-AircraftModel * Model;
+LoadTranportationModel * Model;
 int s; // Number of states
 int p; // Inputs number
 int q; // Outputs number
@@ -29,22 +29,22 @@ long k; // discret time
 float frequency;
 int lastTime;
 double f;
-MatrixXf Az(16,16);
-MatrixXf Bz(16,4);
+MatrixXf Az(20,20);
+MatrixXf Bz(20,4);
 MatrixXf Wy; // Output weighting
 MatrixXf Wu; //Control weighting
-MatrixXf R(16*5,1);
+MatrixXf R(20*5,1);
 MatrixXf Ur(4*1,1);
-MatrixXf G(16*5,4*1);
-MatrixXf Q(16*5,16);
-MatrixXf xs(16,1);
-MatrixXf deltaxs(16,1);
+MatrixXf G(20*5,4*1);
+MatrixXf Q(20*5,20);
+MatrixXf xs(20,1);
+MatrixXf deltaxs(20,1);
 MatrixXf DeltaU(4*1,1);
-MatrixXf xr(16,1);
+MatrixXf xr(20,1);
 MatrixXf as(4,1);
 MatrixXf ur(4,1);
-MatrixXf Ymax(16*5,1);
-MatrixXf Ymin(16*5,1);
+MatrixXf Ymax(20*5,1);
+MatrixXf Ymin(20*5,1);
 //quadprog
 QProblem qp(4,104);
 Options options;
@@ -57,7 +57,7 @@ MatrixXf dYmax;
 MatrixXf dYmin;
 MatrixXf dUmax(4*1,1);
 MatrixXf dUmin(4*1,1);
-MatrixXf Yr(16*5,1);
+MatrixXf Yr(20*5,1);
 MatrixXf Ar(4*1,104);
 MatrixXf lbr(104,1);
 MatrixXf ubr(104,1);
@@ -72,21 +72,21 @@ int nWSR;
 //std::chrono::steady_clock::time_point last;
 /* Exported functions definitions --------------------------------------------*/
 
-MpcBirotor::MpcBirotor() {
+MpcLoad::MpcLoad() {
 	/*Initialization of all MPC variable*/
-	s=16;
+	s=20;
 	p=4;
-	q=16;
+	q=20;
 	N=5;
 	M=1;
 	k=0;
 	frequency=M_PI/20;
 	ts=0.01;
 	//Initialize the mathematics model
-	Model=new AircraftModel();
-	MatrixXf SumRho(2,2);
-	MatrixXf SumLambda(2,2);
-	MatrixXf TerminalCost(2,2);
+	Model=new LoadTranportationModel();
+	MatrixXf SumRho(20,20);
+	MatrixXf SumLambda(20,20);
+	MatrixXf TerminalCost(20,20);
 	Wy.setZero(q*N,q*N); //Output weight matrix
 	Wu.setZero(p*M,p*M); //Input weight matrix
 	/*Output weight matrix creation*/
@@ -121,16 +121,16 @@ MpcBirotor::MpcBirotor() {
 //	last=std::chrono::steady_clock::now();
 }
 
-MpcBirotor::~MpcBirotor() {
+MpcLoad::~MpcLoad() {
 	// TODO Auto-generated destructor stub
 }
 
-Eigen::MatrixXf MpcBirotor::Controler(Eigen::MatrixXf states){
+Eigen::MatrixXf MpcLoad::Controler(Eigen::MatrixXf states){
 	Eigen::MatrixXf u(4,1);
 	k=0;
 	auto start = std::chrono::steady_clock::now();
 	//Vector of states
-		xs<<0,0,3,states.block(3,0,5,1),0,0,0,states.block(11,0,5,1);
+	xs<<0,0,3,states.block(3,0,7,1),0,0,0,states.block(13,0,7,1);
 	//Vectors of reference trajectory and control
     xr=TrajetoryReference(k).block(0,0,q,1);
     as=AcelerationReference(k);
@@ -181,12 +181,12 @@ Eigen::MatrixXf MpcBirotor::Controler(Eigen::MatrixXf states){
 	dYmax=Ymax-(Q*deltaxs)-Yr;
 	dYmin=(Q*deltaxs)+Yr-Ymin;
 	Ar.block(0,0,4*1,4*1)=Im;
-	Ar.block(0,4,4*1,16*5)=G.transpose();
+	Ar.block(0,4,4*1,20*5)=G.transpose();
 
 	lbr.block(0,0,4*1,1)=-dUmin;
-	lbr.block(4,0,16*5,1)=-dYmin;
+	lbr.block(4,0,20*5,1)=-dYmin;
 	ubr.block(0,0,4*1,1)=dUmax;
-	ubr.block(4,0,16*5,1)=dYmax;
+	ubr.block(4,0,20*5,1)=dYmax;
 
 	/*---------------------------------*/
 	std::copy(H.data(),H.data()+H.size(),Hq);
@@ -214,22 +214,21 @@ Eigen::MatrixXf MpcBirotor::Controler(Eigen::MatrixXf states){
 	return u;
 }
 /* Private functions ------------------------------------------------------- */
-Eigen::MatrixXf MpcBirotor::TrajetoryReference(int k){
-	MatrixXf R(16,1);
-	double x,y,z,phi,theta,psi,alphal,alphar;
-	double dot_x,dot_y,dot_z,dot_phi,dot_theta,dot_psi,dot_alphal,dot_alphar;
+Eigen::MatrixXf MpcLoad::TrajetoryReference(int k){
+	MatrixXf R(20,1);
+	double x,y,z,phi,theta,psi,alphal,alphar,gamma1,gamma2;
+	double dot_x,dot_y,dot_z,dot_phi,dot_theta,dot_psi,dot_alphal,dot_alphar,dot_gamma1,dot_gamma2;
 	R.setZero();
-	//x=0.5*cos(frequency*ts*k);
-	//y=0.5*sin(frequency*ts*k);
-	//z=3-2*cos(frequency*ts*k);
-	x=0;
-	y=0;
-	z=3;
-	phi=0.0000890176;
-	theta=0.0154833;
+	x=0.5*cos(frequency*ts*k);
+	y=0.5*sin(frequency*ts*k);
+	z=3-2*cos(frequency*ts*k);
+	phi=0.000197071;
+	theta=0.0885222;
 	psi=0;
-	alphar=-0.0154821;
-	alphal=-0.0153665;
+	alphar=-0.0881387;
+	alphal=-0.0882323;
+	gamma1=-0.000195539;
+	gamma2=-0.0885222;
 	dot_x=-0.5*frequency*sin(frequency*ts*k);
 	dot_y=0.5*frequency*cos(frequency*ts*k);
 	dot_z=2*frequency*sin(frequency*ts*k);
@@ -238,12 +237,14 @@ Eigen::MatrixXf MpcBirotor::TrajetoryReference(int k){
 	dot_psi=0;
 	dot_alphar=0;
 	dot_alphal=0;
+	dot_gamma1=0;
+	dot_gamma2=0;
 
-	R<<x,y,z,phi,theta,psi,alphal,alphar,dot_x,dot_y,dot_z,dot_phi,
-			dot_theta,dot_psi,dot_alphal,dot_alphar;
+	R<<x,y,z,phi,theta,psi,alphal,alphar,gamma1,gamma2,dot_x,dot_y,dot_z,dot_phi,
+			dot_theta,dot_psi,dot_alphal,dot_alphar,dot_gamma1,dot_gamma2;
 	return R;
 }
-Eigen::MatrixXf MpcBirotor::AcelerationReference(int k){
+Eigen::MatrixXf MpcLoad::AcelerationReference(int k){
 	MatrixXf asr(4,1);
 	double dot2_x,dot2_y,dot2_z,dot2_psi;
 	dot2_x=-0.5*pow(frequency,2)*cos(frequency*ts*k);
@@ -253,7 +254,7 @@ Eigen::MatrixXf MpcBirotor::AcelerationReference(int k){
 	asr<<dot2_x, dot2_y, dot2_z, dot2_psi;
 	return asr;
 }
-Eigen::MatrixXf MpcBirotor::Pow(Eigen::MatrixXf matrix, int power){
+Eigen::MatrixXf MpcLoad::Pow(Eigen::MatrixXf matrix, int power){
 	MatrixXf aux;
 	if(power==0){
 		aux=MatrixXf::Identity(matrix.rows(),matrix.cols());

@@ -30,7 +30,7 @@ using namespace std;
 ContinuousControlManager::ContinuousControlManager(std::string name) :
     interface(new ContinuousControlInterface("ContinuousControl:Interface")),
     // sm1(new SubModule1), // talvez fosse mais interessante construir os submodulos no init
-    ms_sample_time(15),
+    ms_sample_time(12),
     name_(name)
 {
 	//mpc=new MPC::MpcControler();
@@ -144,7 +144,7 @@ void ContinuousControlManager::Run()
     	//u=mpc->Controler(xs);
     	u=lqr->Controler(xs,status.stop);
     	//u=mpcload->Controler(xs);
-    	//u=mpcbirotor->Controler(xs);
+    	//u=mpcbirotor->Controler(xs,status.stop);
     	//u=test->Controler(channels);
     	//dead zone treatment
     	std::cout<<u<<std::endl;

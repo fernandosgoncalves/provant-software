@@ -29,7 +29,7 @@ using namespace std;
 CommLowLevelManager::CommLowLevelManager(std::string name) :
     interface(new CommLowLevelInterface("CommLowLevel:Interface")),
     // sm1(new SubModule1), // talvez fosse mais interessante construir os submodulos no init
-    ms_sample_time(15),
+    ms_sample_time(12),
     name_(name)
 {
 
@@ -63,20 +63,21 @@ void CommLowLevelManager::Run()
 {
     Init();
     // Algumas variaveis... 
-    proVant::atitude atitude;
-    proVant::position position;
-    proVant::servos_state servos;
-    proVant::debug debug;
-    proVant::rcNormalize rc;
+    proVant::atitude atitude, atitude_aux;
+    proVant::position position, position_aux;
+    proVant::servos_state servos, servos_aux;
+    proVant::debug debug, debug_aux;
+    proVant::rcNormalize rcNormalize, rcNormalize_aux;
     proVant::controlOutput actuation;
     proVant::controlOutput actuation2;
+    proVant::controlOutput actuation;
+    proVant::controlOutput actuation2, actuation2_aux;
     proVant::status status;
-
 
     float data1[2]={};
     float data2[2]={};
     float data3[2]={};
-    int i = 0;
+    int i = 0, flag=0;
 
     actuation.servoLeft=0;
     actuation.servoRight=0;
@@ -87,13 +88,28 @@ void CommLowLevelManager::Run()
     // Loop principal!
     while(1) {
     	auto start = std::chrono::steady_clock::now();
-    	//Recive states from Discovery
-    	PROVANT.updateData();
-    	atitude = PROVANT.getVantData().getAtitude();
-    	position= PROVANT.getVantData().getPosition();
-    	servos= PROVANT.getVantData().getServoState();    //Function made to save current as alpha and voltage as dotalpha
-    	actuation2=PROVANT.getVantData().getActuation();
-    	rc= PROVANT.getVantData().getNormChannels();
+    	/*Recive states from Discovery*/
+    	flag=PROVANT.updateData();
+
+    	atitude_aux = PROVANT.getVantData().getAtitude();
+    	if (atitude_aux.dotPitch!=0 || atitude_aux.dotRoll!=0 || atitude_aux.dotYaw!=0 || atitude_aux.pitch!=0 || atitude_aux.roll!=0 || atitude_aux.yaw!=0){
+    		atitude=atitude_aux;
+    	}
+    	position_aux= PROVANT.getVantData().getPosition();
+    	if(position_aux.dotX!=0 || position_aux.dotY!=0 || position_aux.dotZ!=0 || position_aux.x!=0 || position_aux.y!=0 || position_aux.z!=0){
+    		position=position_aux;
+    	}
+    	actuation2_aux=PROVANT.getVantData().getActuation();
+    	if (actuation2_aux.escLeftNewtons!=0 || actuation2_aux.escRightNewtons!=0 || actuation2_aux.servoLeft!=0 || actuation2_aux.servoRight!=0){
+    		actuation2=actuation2_aux;
+    	}
+    	servos_aux= PROVANT.getVantData().getServoState();    //Function made to save current as alpha and voltage as dotalpha
+    	if(servos_aux.alphal!=0 || servos_aux.alphar!=0 || servos_aux.dotAlphal!=0 || servos_aux.dotAlphar!=0){
+    		servos=servos_aux;
+    	}
+
+
+    	//rcNormalize= PROVANT.getVantData().getNormChannels();
     	status=PROVANT.getVantData().getStatus();
     	debug=PROVANT.getVantData().getDebug();
 
@@ -110,28 +126,18 @@ void CommLowLevelManager::Run()
     		PROVANT.multwii_sendstack();
     	}
 
-//    	//Test: receives control sent to discovery from discovery
-//		PROVANT.updateData();
-//		actuation2=PROVANT.getVantData().getActuation();
-    	//Elapsed time code
-    	auto end = std::chrono::steady_clock::now();
-    	auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    	std::cout << "It took me " << (float)(elapsed.count()/1000) << " miliseconds." << std::endl;
-
-
-
     	interface->push(position, interface->q_position_out_);
     	interface->push(atitude, interface->q_atitude_out_);
     	interface->push(servos, interface->q_servos_out_);
     	interface->push(debug, interface->q_debug_out_);
-    	interface->push(rc, interface->q_rc_out_);
+    	interface->push(rcNormalize, interface->q_rc_out_);
     	interface->push(status,interface->q_status_out_);
 
     	interface->push(position, interface->q_position2_out_);
     	interface->push(atitude, interface->q_atitude2_out_);
     	interface->push(servos, interface->q_servos2_out_);
     	interface->push(debug, interface->q_debug2_out_);
-    	interface->push(rc, interface->q_rc2_out_);
+    	interface->push(rcNormalize, interface->q_rc2_out_);
     	interface->push(actuation2, interface->q_actuation2_out_);
     	interface->push(status,interface->q_status2_out_);
 

@@ -51,6 +51,14 @@ set(SRCS
 	${PROJECT_COMMON_DIR_SUBSYS}/Provant/src/vant.cpp
 	${PROJECT_COMMON_DIR_SUBSYS}/BeagleInterface/src/uart.cpp        
 	#${PROJECT_SOURCE_DIR}/SubModule2.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Models/src/LoadTranportationModel.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Models/src/AircraftModel.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/MpcControler.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/MpcLoad.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/MpcBirotor.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/LQRControler.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/TESTActuator.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Trajectory/src/ReferenceTrajectory.cpp       
 	${PROJECT_COMMON_DIR}/src/AbstractMessageInterface.cpp
 	${PROJECT_COMMON_DIR}/src/AbstractModuleManager.cpp
 )
@@ -107,7 +115,11 @@ include_directories(
         ${PROJECT_CONFIG_DIR}
 	${PROJECT_COMMON_DIR}/inc	
 	${PROJECT_COMMON_DIR_SUBSYS}/Provant/inc
-	${PROJECT_COMMON_DIR_SUBSYS}/BeagleInterface/inc	
+	${PROJECT_COMMON_DIR_SUBSYS}/BeagleInterface/inc
+	${PROJECT_COMMON_DIR_SUBSYS}/BeagleInterface/inc
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/inc
+	${PROJECT_COMMON_DIR_SUBSYS}/Models/inc
+	${PROJECT_COMMON_DIR_SUBSYS}/Trajectory/inc		
         ${PROJECT_COMMON_DIR_SUBSYS}
 	${PROJECT_COMMON_DIR_SUBSYS}/qpOases/include
         ${Boost_INCLUDE_DIRS}

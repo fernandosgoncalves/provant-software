@@ -115,7 +115,10 @@ include_directories(
         "${PROJECT_COMMON_DIR}/inc"
 	"${PROJECT_SUBSYS_DIR}/common"        
 	"${PROJECT_SUBSYS_DIR}/common/Provant/inc"
-	"${PROJECT_SUBSYS_DIR}/common/BeagleInterface/inc"	
+	"${PROJECT_SUBSYS_DIR}/common/BeagleInterface/inc"
+	${PROJECT_SUBSYS_DIR}/common/Controller/inc
+	${PROJECT_SUBSYS_DIR}/common/Models/inc
+	${PROJECT_SUBSYS_DIR}/common/Trajectory/inc		
 	${PROJECT_COMMON_DIR_SUBSYS}/
 	
 	

@@ -49,14 +49,17 @@ set(SRCS
         ${PROJECT_SOURCE_DIR}/ContinuousControlManager.cpp
         #${PROJECT_SOURCE_DIR}/SubModule1.cpp
         #${PROJECT_SOURCE_DIR}/SubModule2.cpp
-	${PROJECT_SOURCE_DIR}/LoadTranportationModel.cpp
-	${PROJECT_SOURCE_DIR}/AircraftModel.cpp
-	${PROJECT_SOURCE_DIR}/MpcControler.cpp
-	${PROJECT_SOURCE_DIR}/MpcLoad.cpp
-	${PROJECT_SOURCE_DIR}/MpcBirotor.cpp
-	${PROJECT_SOURCE_DIR}/LQRControler.cpp
-	${PROJECT_SOURCE_DIR}/TESTActuator.cpp
-	${PROJECT_SOURCE_DIR}/ReferenceTrajectory.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Provant/src/proVantProtocol.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Provant/src/vant.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/BeagleInterface/src/uart.cpp 
+	${PROJECT_COMMON_DIR_SUBSYS}/Models/src/LoadTranportationModel.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Models/src/AircraftModel.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/MpcControler.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/MpcLoad.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/MpcBirotor.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/LQRControler.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/TESTActuator.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Trajectory/src/ReferenceTrajectory.cpp
 	${PROJECT_COMMON_DIR}/src/AbstractMessageInterface.cpp
 	${PROJECT_COMMON_DIR}/src/AbstractModuleManager.cpp
 )

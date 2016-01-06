@@ -8,34 +8,38 @@
   *****************************************************************************/
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef MPCBIROTOR_H_
-#define MPCBIROTOR_H_
+#ifndef MPCCONTORLER_H_
+#define MPCCONTORLER_H_
 /* Includes ------------------------------------------------------------------*/
 #include "Eigen/Dense"
+#include "LoadTranportationModel.h"
 #include "AircraftModel.h"
 #include "math.h"
 #include <iostream>
 #include <chrono>
 #include "qpOASES.hpp"
+#include "ReferenceTrajectory.h"
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
-namespace MPCBirotor {
 
-class MpcBirotor {
+namespace MPC {
+
+class MpcControler {
 /* Exported functions ------------------------------------------------------- */
 public:
-	MpcBirotor();
-	virtual ~MpcBirotor();
+	MpcControler();
+	virtual ~MpcControler();
 	Eigen::MatrixXf Controler(Eigen::MatrixXf states);
 /* Private functions ------------------------------------------------------- */
 private:
 	Eigen::MatrixXf TrajetoryReference(int k);
 	Eigen::MatrixXf AcelerationReference(int k);
 	Eigen::MatrixXf Pow(Eigen::MatrixXf matrix, int power);
+	TRAJECTORY::ReferenceTrajectory * trajectory;
 
 };
 
 } /* namespace mpc */
 
-#endif /* MPCBIROTOR_H_ */
+#endif /* MPCCONTORLER_H_ */

@@ -1,44 +1,39 @@
 /**
   ******************************************************************************
-  * @file    subsystems/subsys_ContinousContorl/AircraftModel.h
+  * @file    subsystems/subsys_ContinousContorl/inc/ReferenceTrajectory.h
   * @author  Richard Andrade
   * @version V1.0.0
-  * @date    27-Julho-2015
-  * @brief   Mathematic Model for the Birotor.
+  * @date    17-Nov-2015
+  * @brief   Reference Generator.
   *****************************************************************************/
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef AIRCRAFTMODEL_H_
-#define AIRCRAFTMODEL_H_
+#ifndef REFERENCETRAJECTORY_H_
+#define REFERENCETRAJECTORY_H_
 /* Includes ------------------------------------------------------------------*/
 #include "Eigen/Dense"
 #include "math.h"
+#include <iostream>
+#include <chrono>
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
-namespace model {
+namespace TRAJECTORY {
 
-class AircraftModel {
+class ReferenceTrajectory {
 /* Exported functions ------------------------------------------------------- */
 public:
-	AircraftModel();
-	virtual ~AircraftModel();
-	Eigen::MatrixXf MatrixA(Eigen::MatrixXf as, float ts);
-	Eigen::MatrixXf MatrixB(float ts);
-	Eigen::MatrixXf MatrixC();
-	Eigen::MatrixXf MatrixSumRho();
-	Eigen::MatrixXf MatrixSumLambda();
-	Eigen::MatrixXf RefrenceControl(Eigen::MatrixXf as);
-	Eigen::MatrixXf MatrixTerminalCost();
-	Eigen::VectorXf OutputMaxVector();
-	Eigen::VectorXf OutputMinVector();
-	Eigen::VectorXf ControlMaxVector();
-	Eigen::VectorXf ControlMinVector();
+	ReferenceTrajectory();
+	ReferenceTrajectory(float sample_time);
+	virtual ~ReferenceTrajectory();
+	Eigen::MatrixXf TrajetoryReference_LQR();
+	Eigen::MatrixXf TrajetoryReference_MPC(long k);
+	Eigen::MatrixXf AcelerationReference(int k);
 /* Private functions ------------------------------------------------------- */
 private:
 
 };
 
-} /* namespace aircraftmodel */
+} /* namespace TRAJECTORY */
 
-#endif /* AIRCRAFTMODEL_H_ */
+#endif /* REFERENCETRAJECTORY_H_ */

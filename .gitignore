@@ -17,3 +17,12 @@
 \#.*\#
 io-board/stm32f4/.settings/
 io-board/stm32f4/app/testes/
+main-board/prj-remote-controlled-flight/build/CMakeCache.txt
+main-board/prj-remote-controlled-flight/build/CMakeFiles/
+main-board/prj-remote-controlled-flight/build/Makefile
+main-board/prj-remote-controlled-flight/build/cmake_install.cmake
+main-board/prj-remote-controlled-flight/build/provant_main_v1
+main-board/prj-remote-controlled-flight/build/subsystems/
+main-board/prj-remote-controlled-flight/subsystems/subsys_CommLowLevel/build/
+main-board/prj-remote-controlled-flight/subsystems/subsys_ContinuousControl/build/
+main-board/prj-remote-controlled-flight/subsystems/subsys_DataProcessing/build/

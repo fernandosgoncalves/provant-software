@@ -1,43 +1,42 @@
 /**
   ******************************************************************************
-  * @file    subsystems/subsys_ContinousContorl/inc/MpcControle.h
+  * @file    subsystems/subsys_ContinousContorl/AircraftModel.h
   * @author  Richard Andrade
   * @version V1.0.0
   * @date    27-Julho-2015
-  * @brief   Controlador Preditivo.
+  * @brief   Mathematic Model for the Birotor.
   *****************************************************************************/
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef MPCCONTORLER_H_
-#define MPCCONTORLER_H_
+#ifndef AIRCRAFTMODEL_H_
+#define AIRCRAFTMODEL_H_
 /* Includes ------------------------------------------------------------------*/
 #include "Eigen/Dense"
-#include "LoadTranportationModel.h"
-#include "AircraftModel.h"
 #include "math.h"
-#include <iostream>
-#include <chrono>
-#include "qpOASES.hpp"
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
+namespace model {
 
-namespace MPC {
-
-class MpcControler {
+class AircraftModel {
 /* Exported functions ------------------------------------------------------- */
 public:
-	MpcControler();
-	virtual ~MpcControler();
-	Eigen::MatrixXf Controler(Eigen::MatrixXf states);
+	AircraftModel();
+	virtual ~AircraftModel();
+	void LinearModel(Eigen::MatrixXf as, float ts,Eigen::MatrixXf * Az, Eigen::MatrixXf * Bz);
+	Eigen::MatrixXf MatrixSumRho();
+	Eigen::MatrixXf MatrixSumLambda();
+	Eigen::MatrixXf RefrenceControl(Eigen::MatrixXf as);
+	Eigen::MatrixXf MatrixTerminalCost();
+	Eigen::VectorXf OutputMaxVector();
+	Eigen::VectorXf OutputMinVector();
+	Eigen::VectorXf ControlMaxVector();
+	Eigen::VectorXf ControlMinVector();
 /* Private functions ------------------------------------------------------- */
 private:
-	Eigen::MatrixXf TrajetoryReference(int k);
-	Eigen::MatrixXf AcelerationReference(int k);
-	Eigen::MatrixXf Pow(Eigen::MatrixXf matrix, int power);
 
 };
 
-} /* namespace mpc */
+} /* namespace aircraftmodel */
 
-#endif /* MPCCONTORLER_H_ */
+#endif /* AIRCRAFTMODEL_H_ */
