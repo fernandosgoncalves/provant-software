@@ -69,8 +69,6 @@ void CommLowLevelManager::Run()
     proVant::debug debug, debug_aux;
     proVant::rcNormalize rcNormalize, rcNormalize_aux;
     proVant::controlOutput actuation;
-    proVant::controlOutput actuation2;
-    proVant::controlOutput actuation;
     proVant::controlOutput actuation2, actuation2_aux;
     proVant::status status;
 

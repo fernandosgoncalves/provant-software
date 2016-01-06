@@ -408,7 +408,7 @@ float mag_tmp[3]={0};
 #endif
 #ifdef C_IO_IMU_USE_GY_87
     // Read x, y, z acceleration, pack the data.
-       	int16_t  buffer[3]={};
+       	int16_t  buffer[6]={};
        	float accScale =0.00012207f; //= 1/8192
        	/*g-ranges, full resolution - 1/sensitivity
        	 * ±2g  16384 LSB/g
@@ -416,7 +416,8 @@ float mag_tmp[3]={0};
          * ±8g  4096 LSB/g
          * ±16g 2048 LSB/g
        	 */
-       	c_io_imu_MPU6050_getAcceleration(&buffer[0],&buffer[1],&buffer[2]);
+       	c_io_imu_MPU6050_getMotion6(&buffer[0],&buffer[1],&buffer[2],&buffer[3],&buffer[4],&buffer[5]);
+       	//c_io_imu_MPU6050_getAcceleration(&buffer[0],&buffer[1],&buffer[2]);
 
        	// Para transformar em valores no SI -> acc/8192 *G m/s^2
        	accRaw[0] = buffer[0]*accScale;
@@ -450,13 +451,13 @@ float mag_tmp[3]={0};
         float gyrScale =16.4f;
         gyrScale = 0.0174532925f/gyrScale;//0.0174532925 = PI/180
 
-        c_io_imu_MPU6050_getRotation(&buffer[0],&buffer[1],&buffer[2]);
+        //c_io_imu_MPU6050_getRotation(&buffer[0],&buffer[1],&buffer[2]);
         //c_common_i2c_readBytes(I2Cx_imu, GYRO_ADDR, GYRO_X_ADDR, 6, imuBuffer);
         sample_time_gyro_us[0] = c_io_imu_sample_time_us();
 
-        gyrRaw[0] =  buffer[0]*gyrScale;
-        gyrRaw[1] =  buffer[1]*gyrScale;
-        gyrRaw[2] =  buffer[2]*gyrScale;
+        gyrRaw[0] =  buffer[3]*gyrScale;
+        gyrRaw[1] =  buffer[4]*gyrScale;
+        gyrRaw[2] =  buffer[5]*gyrScale;
 
         // Read x, y, z from magnetometer;
 

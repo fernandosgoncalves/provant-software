@@ -106,7 +106,10 @@ include_directories(
         ${PROJECT_CONFIG_DIR}
 	${PROJECT_COMMON_DIR}/inc
 	${PROJECT_COMMON_DIR_SUBSYS}/Provant/inc
-	${PROJECT_COMMON_DIR_SUBSYS}/BeagleInterface/inc	
+	${PROJECT_COMMON_DIR_SUBSYS}/BeagleInterface/inc
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/inc
+	${PROJECT_COMMON_DIR_SUBSYS}/Models/inc
+	${PROJECT_COMMON_DIR_SUBSYS}/Trajectory/inc			
 	${PROJECT_COMMON_DIR_SUBSYS}
 	${PROJECT_COMMON_DIR_SUBSYS}/qpOases/include
         ${Boost_INCLUDE_DIRS}

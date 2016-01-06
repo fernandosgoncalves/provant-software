@@ -228,7 +228,6 @@ void proVantProtocol::decodeMessage(uint8_t tam, uint8_t msg){
 				vantData.setDebug(2, (int16_t)deserialize16(4));
 				vantData.setDebug(3, (int16_t)deserialize16(6));
 				vantData.setDebug(4, (int16_t)deserialize16(8));
-				std::cout<<"d1"<<vantData.getDebug(1);
 				//printf("D1 %d\nD2 %d\nD3 %d\nD4 %d\n", vantData.getDebug(1), vantData.getDebug(2), vantData.getDebug(3), vantData.getDebug(4));
 			break;
 			case MSP_RAW_IMU:

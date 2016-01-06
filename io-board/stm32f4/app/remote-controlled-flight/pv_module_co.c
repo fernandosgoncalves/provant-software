@@ -29,11 +29,11 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-portTickType lastWakeTime;
+portTickType pv_module_co_lastWakeTime;
 pv_msg_input iInputData;
 pv_msg_controlOutput iControlBeagleData;
 pv_msg_controlOutput oControlOutputData; 
-GPIOPin LED5;
+GPIOPin pv_module_co_LED5;
 
 /* Inboxes buffers */
 pv_type_actuation    iActuation;
@@ -64,7 +64,7 @@ void module_co_init()
   c_rc_BS_control_init();
 
   /* Pin for debug */
-  LED5 = c_common_gpio_init(GPIOD, GPIO_Pin_14, GPIO_Mode_OUT); //LD5
+  pv_module_co_LED5 = c_common_gpio_init(GPIOD, GPIO_Pin_14, GPIO_Mode_OUT); //LD5
   /*Data consumed by the thread*/
   pv_interface_co.iInputData          = xQueueCreate(1, sizeof(pv_msg_input));
   pv_interface_co.iControlBeagleData  = xQueueCreate(1, sizeof(pv_msg_controlOutput));
@@ -98,7 +98,7 @@ void module_co_run()
   {
 
 	/* Leitura do numero de ciclos atuais */
-	lastWakeTime = xTaskGetTickCount();
+	  pv_module_co_lastWakeTime = xTaskGetTickCount();
 
 	/* Variavel para debug */
 	heartBeat+=1;
@@ -128,8 +128,8 @@ void module_co_run()
 		// Ajusta o eixo de referencia do servo (montado ao contrario)
 		iActuation.servoLeft = -iActuation.servoLeft;
 	#elif defined TORQUE_CONTROL
-		iActuation.servoRight=iControlBeagleData.actuation.servoRight;//((float)iInputData.receiverOutput.joystick[1]/84)*1023;//
-		iActuation.servoLeft=iControlBeagleData.actuation.servoLeft;//((float)iInputData.receiverOutput.joystick[1]/84)*1023;
+		iActuation.servoRight=iControlBeagleData.actuation.servoRight;
+		iActuation.servoLeft=iControlBeagleData.actuation.servoLeft;
 		iActuation.escLeftNewtons=iControlBeagleData.actuation.escLeftNewtons;
 		iActuation.escRightNewtons=iControlBeagleData.actuation.escRightNewtons;
 	#endif
@@ -160,8 +160,8 @@ void module_co_run()
 	unsigned char sp_right;
 	unsigned char sp_left;
 
-	sp_right = 166;//setPointESC_Forca(iActuation.escRightNewtons);
-	sp_left = 166;//setPointESC_Forca(iActuation.escLeftNewtons );
+	sp_right = setPointESC_Forca(iActuation.escRightNewtons);
+	sp_left = setPointESC_Forca(iActuation.escLeftNewtons );
 
 	if (iInputData.securityStop){
 		c_io_blctrl_setSpeed(1, 0 );//sp_right
@@ -195,16 +195,16 @@ void module_co_run()
 	oControlOutputData.heartBeat = heartBeat;
 
     unsigned int timeNow=xTaskGetTickCount();
-    oControlOutputData.cicleTime = timeNow - lastWakeTime;
+    oControlOutputData.cicleTime = timeNow - pv_module_co_lastWakeTime;
 
     /* toggle pin for debug */
-    c_common_gpio_toggle(LED5);
+    c_common_gpio_toggle(pv_module_co_LED5);
 
     if(pv_interface_co.oControlOutputData != 0)
       xQueueOverwrite(pv_interface_co.oControlOutputData, &oControlOutputData);
 
     /* A thread dorme ate o tempo final ser atingido */
-    vTaskDelayUntil( &lastWakeTime, MODULE_PERIOD / portTICK_RATE_MS);
+    vTaskDelayUntil( &pv_module_co_lastWakeTime, MODULE_PERIOD / portTICK_RATE_MS);
 	}
 }
 

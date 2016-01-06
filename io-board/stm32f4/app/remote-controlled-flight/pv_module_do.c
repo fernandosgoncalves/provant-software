@@ -23,20 +23,22 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define MODULE_PERIOD	    6//ms
+#define MODULE_PERIOD	    12//ms
 //#define USART_BAUDRATE     460800  //<-Bluethood
 #define USART_BAUDRATE     921600 //<-Beaglebone
 
 //#define NONHIL
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-portTickType lastWakeTime;
-unsigned int heartBeat=0;
-unsigned int cicleTime=0;
+portTickType pv_module_do_lastWakeTime;
+unsigned int pv_module_do_heartBeat=0;
+unsigned int pv_module_do_cicleTime=0;
 pv_msg_input iInputData;
 pv_msg_gps iGpsData;
 pv_msg_controlOutput iControlOutputData;
 pv_msg_controlOutput oControlBeagleData;
+pv_type_actuation pv_module_do_actuation;
+pv_type_actuation pv_module_do_auxactuation;
 float rpy[3];
 float drpy[3];
 float position[3];
@@ -49,7 +51,7 @@ float aux2[3];
 float servoTorque[2];
 float escForce[2];
 int channel[7];
-GPIOPin LED3;
+GPIOPin pv_module_do_LED3;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -75,7 +77,7 @@ void module_do_init()
   pv_interface_do.oControlBeagleData  = xQueueCreate(1, sizeof(pv_msg_controlOutput));
 
   /* Pin for debug */
-  LED3 = c_common_gpio_init(GPIOD, GPIO_Pin_13, GPIO_Mode_OUT); //LED3
+  pv_module_do_LED3 = c_common_gpio_init(GPIOD, GPIO_Pin_13, GPIO_Mode_OUT); //LED3
 
 }
 
@@ -92,8 +94,8 @@ void module_do_run()
 	oControlBeagleData.actuation.escLeftSpeed  = 0;
 	while(1)
 	{
-		lastWakeTime = xTaskGetTickCount();
-		heartBeat++;
+		pv_module_do_lastWakeTime = xTaskGetTickCount();
+		pv_module_do_heartBeat++;
 
 		if (uxQueueMessagesWaiting(pv_interface_do.iInputData)!=0){
 			xQueueReceive(pv_interface_do.iInputData, &iInputData, 0);
@@ -151,9 +153,9 @@ void module_do_run()
 		position[1]=0;//iInputData.position.y;
 		position[2]=0;//iInputData.position.z;
 
-		velocity[0]=iInputData.position.dotX;
-		velocity[1]=iInputData.position.dotY;
-		velocity[2]=iInputData.position.dotZ;
+		velocity[0]=0;//iInputData.position.dotX;
+		velocity[1]=0;//iInputData.position.dotY;
+		velocity[2]=0;//iInputData.position.dotZ;
 
 		alpha[0]=iInputData.servosOutput.servo.alphal;
 		alpha[1]=iInputData.servosOutput.servo.alphar;
@@ -179,26 +181,47 @@ void module_do_run()
 		c_common_datapr_multwii2_sendControldatain(rpy,drpy,position,velocity);
 		c_common_datapr_multwii2_sendEscdata(aux,alpha,dalpha);
 		c_common_datapr_multwii2_sendControldataout(data1,data3,data2);
-		c_common_datapr_multwii_debug((float)cicleTime,iControlOutputData.cicleTime,iInputData.cicleTime,(float)(2*heartBeat-iInputData.heartBeat-iControlOutputData.heartBeat));
+		c_common_datapr_multwii_debug((float)pv_module_do_cicleTime,iControlOutputData.cicleTime,iInputData.cicleTime,(float)(2*pv_module_do_heartBeat-iInputData.heartBeat-iControlOutputData.heartBeat));
 		//c_common_datapr_multwii2_rcNormalize(channel);
 		c_common_datapr_multwii_sendstack(USART2);
 
+		/*Receives control input data from the beaglebone*/
 		c_common_datapr_multiwii_receivestack(USART2);
-		pv_type_actuation  actuation=c_common_datapr_multwii_getattitude();
+		pv_module_do_actuation=c_common_datapr_multwii_getactuation();
+		if(pv_module_do_actuation.escLeftNewtons!=0 || pv_module_do_actuation.escRightNewtons!=0 || pv_module_do_actuation.servoLeft!=0 || pv_module_do_actuation.servoRight!=0){
+			pv_module_do_auxactuation=pv_module_do_actuation;
+		}
 
-		oControlBeagleData.actuation=actuation;
+		if(pv_module_do_auxactuation.servoLeft<=2 && pv_module_do_auxactuation.servoLeft>=-2)
+			oControlBeagleData.actuation.servoLeft=pv_module_do_auxactuation.servoLeft;
+		if(pv_module_do_auxactuation.servoRight<=2 && pv_module_do_auxactuation.servoRight>=-2)
+			oControlBeagleData.actuation.servoRight=pv_module_do_auxactuation.servoRight;
+
+		oControlBeagleData.actuation.escRightNewtons=pv_module_do_auxactuation.escRightNewtons;
+		oControlBeagleData.actuation.escLeftNewtons=pv_module_do_auxactuation.escLeftNewtons;
+
+		if (iInputData.securityStop){
+			oControlBeagleData.actuation.servoLeft=0;
+			oControlBeagleData.actuation.servoRight=0;
+			oControlBeagleData.actuation.escRightNewtons=0;
+			oControlBeagleData.actuation.escLeftNewtons=0;
+			pv_module_do_auxactuation=oControlBeagleData.actuation;
+			pv_module_do_actuation=oControlBeagleData.actuation;
+		}
+
+
 		if(pv_interface_do.oControlBeagleData != 0)
 			xQueueOverwrite(pv_interface_do.oControlBeagleData, &oControlBeagleData);
 
 		#endif
 
 		unsigned int timeNow=xTaskGetTickCount();
-		cicleTime = timeNow - lastWakeTime;
+		pv_module_do_cicleTime = timeNow - pv_module_do_lastWakeTime;
 
 		/* toggle pin for debug */
-		c_common_gpio_toggle(LED3);
+		c_common_gpio_toggle(pv_module_do_LED3);
 
-		vTaskDelayUntil( &lastWakeTime, (MODULE_PERIOD / portTICK_RATE_MS));
+		vTaskDelayUntil( &pv_module_do_lastWakeTime, (MODULE_PERIOD / portTICK_RATE_MS));
 	}
 }
 /* IRQ handlers ------------------------------------------------------------- */

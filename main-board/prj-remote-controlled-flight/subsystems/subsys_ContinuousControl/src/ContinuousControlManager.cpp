@@ -84,7 +84,9 @@ void ContinuousControlManager::Run()
     for (int j=0;j<7;j++)
     	rcNormalize.normChannels[j]=0;
     // Loop principal!
+
     while(1) {
+    	auto start = std::chrono::steady_clock::now();
     	if(interface->pop(atitude, &interface->q_atitude_in)){
     		/*Atitude*/
 //    		cout<<"Atitude Received C"<<endl;
@@ -146,8 +148,6 @@ void ContinuousControlManager::Run()
     	//u=mpcload->Controler(xs);
     	//u=mpcbirotor->Controler(xs,status.stop);
     	//u=test->Controler(channels);
-    	//dead zone treatment
-    	std::cout<<u<<std::endl;
 
 
     	/////////////////////////////////
@@ -163,6 +163,12 @@ void ContinuousControlManager::Run()
 
     	interface->push(actuation, interface->q_actuation_out_);
     	interface->push(actuation, interface->q_actuation2_out_);
+
+    	//Elapsed time code
+    	auto end = std::chrono::steady_clock::now();
+    	auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    	std::cout << "It took me " << (float)(elapsed.count()/1000) << " miliseconds." << std::endl;
+
     	i++;
 	    boost::this_thread::sleep(boost::posix_time::milliseconds(ms_sample_time));
     }
