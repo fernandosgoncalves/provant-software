@@ -102,6 +102,13 @@ volatile uint32_t psr;/* Program status register. */
     pc = pulFaultStackAddress[ 6 ];
     psr = pulFaultStackAddress[ 7 ];
 
+    __asm
+       (
+         " lsr lr,lr,2    \n"
+         " lsl lr,lr,2    \n"
+         " mov pc,lr      \n"
+       );
+
     /* When the following line is hit, the variables contain the register values. */
     for( ;; );
 }

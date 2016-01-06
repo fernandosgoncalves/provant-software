@@ -23,7 +23,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define MODULE_PERIOD	    15//ms
+#define MODULE_PERIOD	    6//ms
 //#define USART_BAUDRATE     460800  //<-Bluethood
 #define USART_BAUDRATE     921600 //<-Beaglebone
 

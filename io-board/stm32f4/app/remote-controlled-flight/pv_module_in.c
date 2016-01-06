@@ -25,14 +25,14 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define MODULE_PERIOD	   15//ms
+#define MODULE_PERIOD	   5//ms
 
 //
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-portTickType lastWakeTime;
+portTickType pv_module_in_lastWakeTime;
 char str[256];
-GPIOPin LED4;
+GPIOPin pv_module_in_LED4;
 
 float attitude_quaternion[4]={1,0,0,0};
 
@@ -55,7 +55,7 @@ pv_msg_input oInputData;
 void module_in_init() 
 {
 	/* Inicialização do hardware do módulo */
-	LED4 = c_common_gpio_init(GPIOD, GPIO_Pin_12, GPIO_Mode_OUT); //LED4
+	pv_module_in_LED4 = c_common_gpio_init(GPIOD, GPIO_Pin_12, GPIO_Mode_OUT); //LED4
 
 	/* Inicialização da imu */
 	c_common_i2c_init(I2C1);
@@ -365,7 +365,7 @@ void module_in_run()
 		xQueueOverwrite(pv_interface_in.oInputData, &oInputData);
 
     /* A thread dorme ate o tempo final ser atingido */
-	vTaskDelayUntil( &lastWakeTime, (MODULE_PERIOD / portTICK_RATE_MS));
+	vTaskDelayUntil( &pv_module_in_lastWakeTime, (MODULE_PERIOD / portTICK_RATE_MS));
 	}
 }
 /* IRQ handlers ------------------------------------------------------------- */

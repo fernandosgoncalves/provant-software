@@ -31,23 +31,23 @@ typedef union _FLOATCONV{
 static const int _multwiisize=3076;
 uint16_t multwii_msgindex = 0;
 uint8_t multwii_checksum = 0;
-unsigned char buffer[128];
 
-pv_type_datapr_attitude attitude;
-pv_type_analog analog;
-pv_type_altitude altitude;
-pv_type_status status;
-pv_type_rc receiver;
-pv_type_ident ident;
-pv_type_motors motors;
-pv_type_debug debug;
-pv_type_actuation actuation;
-pv_type_imuOutput imu;
-pv_type_datapr_position position;
-pv_type_escOutput esc;
-pv_type_gpsRawData gpsRawData;
-pv_type_gpsCompData gpsCompData;
-pv_type_datapr_servos servo;
+pv_type_datapr_attitude  multwii_attitude;
+pv_type_analog  multwii_analog;
+pv_type_altitude  multwii_altitude;
+pv_type_status  multwii_status;
+pv_type_rc  multwii_receiver;
+pv_type_ident  multwii_ident;
+pv_type_motors  multwii_motors;
+pv_type_debug  multwii_debug;
+pv_type_actuation  multwii_actuation;
+pv_type_actuation  multwii_actuation2;
+pv_type_imuOutput  multwii_imu;
+pv_type_datapr_position  multwii_position;
+pv_type_escOutput  multwii_esc;
+pv_type_gpsRawData  multwii_gpsRawData;
+pv_type_gpsCompData  multwii_gpsCompData;
+pv_type_datapr_servos  multwii_servo;
 /* Private functions ---------------------------------------------------------*/
 
 /**
@@ -128,12 +128,12 @@ bool confirmCheckSum(USART_TypeDef* USARTx,uint8_t tam){
 	int i;
 	unsigned char checksum, auxChar;
 	checksum = 0;
-	checksum ^= buffer[0];
-	checksum ^= buffer[1];
+	checksum ^= multwii_recmsg[0];
+	checksum ^= multwii_recmsg[1];
 	for(i = 2; i < tam+2; i++){
 		auxChar=c_common_usart_read(USARTx);
-		buffer[i] = auxChar;
-		checksum ^= buffer[i];
+		multwii_recmsg[i] = auxChar;
+		checksum ^= multwii_recmsg[i];
 		//printf("%d - %u\n", i, auxChar);
 	}
 	auxChar=c_common_usart_read(USARTx);
@@ -144,9 +144,9 @@ bool confirmCheckSum(USART_TypeDef* USARTx,uint8_t tam){
 uint16_t deserialize16(int posInit){
 	uint16_t value;
 
-	value = (buffer[posInit] & 0xff) + ((buffer[posInit+1] & 0xff) << 8);
+	value = (multwii_recmsg[posInit] & 0xff) + ((multwii_recmsg[posInit+1] & 0xff) << 8);
 
-	//printf("%x -- %x -- %d\n", buffer[posInit], buffer[posInit+1], value);
+	//printf("%x -- %x -- %d\n", multwii_recmsg[posInit], multwii_recmsg[posInit+1], value);
 
 	return value;
 }
@@ -154,9 +154,9 @@ uint16_t deserialize16(int posInit){
 uint32_t deserialize32(int posInit){
 	uint32_t value;
 
-	value = (buffer[posInit] & 0xff) + ((buffer[posInit+1] & 0xff) << 8) + ((buffer[posInit+2] & 0xff) << 16) + ((buffer[posInit+3] & 0xff) << 24);
+	value = (multwii_recmsg[posInit] & 0xff) + ((multwii_recmsg[posInit+1] & 0xff) << 8) + ((multwii_recmsg[posInit+2] & 0xff) << 16) + ((multwii_recmsg[posInit+3] & 0xff) << 24);
 
-	//printf("%x -- %x -- %x -- %x -- %d\n", buffer[posInit], buffer[posInit+1], buffer[posInit+2], buffer[posInit+3], value);
+	//printf("%x -- %x -- %x -- %x -- %d\n", multwii_recmsg[posInit], multwii_recmsg[posInit+1], multwii_recmsg[posInit+2], multwii_recmsg[posInit+3], value);
 
 	return value;
 }
@@ -164,7 +164,7 @@ uint32_t deserialize32(int posInit){
 float decodeFloat(int posInit){
 	_FLOATCONV _float;
 	for(int i=0; i<4; i++)
-		_float.b[i]=buffer[posInit+i];
+		_float.b[i]=multwii_recmsg[posInit+i];
 
 	//printf("%f", _float.f);
 	return _float.f;
@@ -177,195 +177,195 @@ void decodeMessage(USART_TypeDef* USARTx,uint8_t tam, uint8_t msg){
 		switch(msg){
 			case MSP_RAW_GPS:
 				//printf("GPS Raw message with %d bytes \n", tam);
-				gpsRawData.gpsFix=(uint8_t)buffer[2]; 	//GPS_FIX	UINT 8	0 or 1
-				gpsRawData.gpsNumSat=(uint8_t)buffer[3];	//GPS_numSat	UINT 8
-				gpsRawData.gpsCoordLat=deserialize32(4);	//GPS_coord[LAT]	UINT 32	1 / 10 000 000 deg
-				gpsRawData.gpsCoordLong=deserialize32(8);	//GPS_coord[LON]	UINT 32	1 / 10 000 000 deg
-				gpsRawData.gpsAltitude=deserialize16(12);	//GPS_altitude	UINT 16	meter
-				gpsRawData.gpsSpeed=deserialize16(14);	//GPS_speed	UINT 16	cm/s
-				gpsRawData.gpsGroundCourse=deserialize16(16);	//GPS_ground_course	UINT 16	unit: degree*10
-				//printf("Fix %d \nNumSat %d \nLat %d\nLong %d\nAlt %d\nSpeed %d\nGC %d\n", buffer[2], buffer[3], vantData.getGpsCoordLat(), vantData.getGpsCoordLong(), vantData.getGpsAltitude(), vantData.getGpsSpeed(), vantData.getGpsGroundCourse());
+				multwii_gpsRawData.gpsFix=(uint8_t)multwii_recmsg[2]; 	//GPS_FIX	UINT 8	0 or 1
+				multwii_gpsRawData.gpsNumSat=(uint8_t)multwii_recmsg[3];	//GPS_numSat	UINT 8
+				multwii_gpsRawData.gpsCoordLat=deserialize32(4);	//GPS_coord[LAT]	UINT 32	1 / 10 000 000 deg
+				multwii_gpsRawData.gpsCoordLong=deserialize32(8);	//GPS_coord[LON]	UINT 32	1 / 10 000 000 deg
+				multwii_gpsRawData.gpsAltitude=deserialize16(12);	//GPS_altitude	UINT 16	meter
+				multwii_gpsRawData.gpsSpeed=deserialize16(14);	//GPS_speed	UINT 16	cm/s
+				multwii_gpsRawData.gpsGroundCourse=deserialize16(16);	//GPS_ground_course	UINT 16	unit: degree*10
+				//printf("Fix %d \nNumSat %d \nLat %d\nLong %d\nAlt %d\nSpeed %d\nGC %d\n", multwii_recmsg[2], multwii_recmsg[3], vantData.getGpsCoordLat(), vantData.getGpsCoordLong(), vantData.getGpsAltitude(), vantData.getGpsSpeed(), vantData.getGpsGroundCourse());
 			break;
 			case MSP_COMP_GPS:
 				//printf("GPS Comp message with %d bytes \n", tam);
-				gpsCompData.gpsDistanceToHome=deserialize16(2); //GPS_distanceToHome	UINT 16	unit: meter
-				gpsCompData.gpsDirectionToHome=deserialize16(4); //GPS_directionToHome	UINT 16	unit: degree (range [-180;+180])
-				gpsCompData.gpsUpdate=(uint8_t)buffer[6]; //GPS_update 		UINT 8	a flag to indicate when a new GPS frame is received (the GPS fix is not dependent of this)
+				multwii_gpsCompData.gpsDistanceToHome=deserialize16(2); //GPS_distanceToHome	UINT 16	unit: meter
+				multwii_gpsCompData.gpsDirectionToHome=deserialize16(4); //GPS_directionToHome	UINT 16	unit: degree (range [-180;+180])
+				multwii_gpsCompData.gpsUpdate=(uint8_t)multwii_recmsg[6]; //GPS_update 		UINT 8	a flag to indicate when a new GPS frame is received (the GPS fix is not dependent of this)
 				//printf("DisToHome %d \nDirToHome %d \nUpdate %d\n", vantData.getGpsDistanceToHome(), vantData.getGpsDirectionToHome(), vantData.getGpsUpdate());
 			break;
 			case MSP_ATTITUDE:
 				//printf("Attitude message with %d bytes \n", tam);
-				attitude.roll=((int16_t)deserialize16(2))/10;	//angx	INT 16	Range [-1800;1800] (unit: 1/10 degree)
-				attitude.pitch=((int16_t)deserialize16(4))/10; //angy	INT 16	Range [-900;900] (unit: 1/10 degree)
-				attitude.yaw=(int16_t)deserialize16(6);	//heading	INT 16	Range [-180;180]
+				multwii_attitude.roll=((int16_t)deserialize16(2))/10;	//angx	INT 16	Range [-1800;1800] (unit: 1/10 degree)
+				multwii_attitude.pitch=((int16_t)deserialize16(4))/10; //angy	INT 16	Range [-900;900] (unit: 1/10 degree)
+				multwii_attitude.yaw=(int16_t)deserialize16(6);	//heading	INT 16	Range [-180;180]
 				//printf("Roll %f \nPitch %f \nYaw %f\n", vantData.getRoll(), vantData.getPitch(), vantData.getYaw());
 			break;
 			case MSP_ANALOG:
 				//printf("Analog message with %d bytes \n", tam);
-				analog.vbat=(uint8_t) buffer[2]; 		//vbat	UINT 8	unit: 1/10 volt
-				analog.intPowerMeterSum=deserialize16(3);	//intPowerMeterSum	UINT 16
-				analog.rssi=deserialize16(5); 		//rssi	UINT 16	range: [0;1023]
-				analog.amperage=deserialize16(7); 	//amperage	UINT 16
+				multwii_analog.vbat=(uint8_t) multwii_recmsg[2]; 		//vbat	UINT 8	unit: 1/10 volt
+				multwii_analog.intPowerMeterSum=deserialize16(3);	//intPowerMeterSum	UINT 16
+				multwii_analog.rssi=deserialize16(5); 		//rssi	UINT 16	range: [0;1023]
+				multwii_analog.amperage=deserialize16(7); 	//amperage	UINT 16
 				//printf("Vbat %d\nPowerMeterSum %d\nRssi %d\nAmperage %d\n", vantData.getVbat(), vantData.getIntPowerMeterSum(), vantData.getRssi(), vantData.getAmperage());
 			break;
 			case MSP_ALTITUDE:
 				//printf("Altitude message with %d bytes \n", tam);
-				altitude.estAlt=(int32_t)deserialize32(2);	//EstAlt	INT 32	cm
-				altitude.vario=(int16_t)deserialize16(6);	//vario	INT 16	cm/s
+				multwii_altitude.estAlt=(int32_t)deserialize32(2);	//EstAlt	INT 32	cm
+				multwii_altitude.vario=(int16_t)deserialize16(6);	//vario	INT 16	cm/s
 				//printf("EstAlt %d\nVario %d\n", vantData.getEstAlt(), vantData.getVario());
 			break;
 			case MSP_STATUS:
 				//printf("Status message with %d bytes \n", tam);
-				status.cycleTime=deserialize16(2);	//cycleTime	UINT 16	unit: microseconds
-				status.i2cErrorsCount=deserialize16(4);	//i2c_errors_count	UINT 16
-				status.sensor=deserialize16(6);		//sensor	UINT 16	BARO<<1|MAG<<2|GPS<<3|SONAR<<4
-				status.flag=deserialize32(8);		//flag	UINT 32	a bit variable to indicate which BOX are active, the bit position depends on the BOX 	which are configured
+				multwii_status.cycleTime=deserialize16(2);	//cycleTime	UINT 16	unit: microseconds
+				multwii_status.i2cErrorsCount=deserialize16(4);	//i2c_errors_count	UINT 16
+				multwii_status.sensor=deserialize16(6);		//sensor	UINT 16	BARO<<1|MAG<<2|GPS<<3|SONAR<<4
+				multwii_status.flag=deserialize32(8);		//flag	UINT 32	a bit variable to indicate which BOX are active, the bit position depends on the BOX 	which are configured
 				//printf("CycleTime %d\nI2CError %d\nSensor %d\nFlag %d\n", vantData.getCycleTime(), vantData.getI2cErrorsCount(), vantData.getSensor(), vantData.getFlag());
 			break;
 			case MSP_RC:
 				//printf("RC message with %d bytes \n", tam);
-				receiver.channels[0]=deserialize16(2);//rcData[RC_CHANS]	16 x UINT 16	Range [1000;2000] ROLL/PITCH/YAW/THROTTLE/AUX1/AUX2/AUX3/AUX4
-				receiver.channels[1]=deserialize16(4);
-				receiver.channels[2]=deserialize16(6);
-				receiver.channels[3]=deserialize16(8);
-				receiver.channels[4]=deserialize16(10);
-				receiver.channels[5]=deserialize16(12);
-				receiver.channels[6]=deserialize16(14);
-				receiver.channels[7]=deserialize16(16);
-				receiver.channels[8]=deserialize16(18);
-				receiver.channels[9]=deserialize16(20);
-				receiver.channels[10]=deserialize16(22);
-				receiver.channels[11]=deserialize16(24);
+				multwii_receiver.channels[0]=deserialize16(2);//rcData[RC_CHANS]	16 x UINT 16	Range [1000;2000] ROLL/PITCH/YAW/THROTTLE/AUX1/AUX2/AUX3/AUX4
+				multwii_receiver.channels[1]=deserialize16(4);
+				multwii_receiver.channels[2]=deserialize16(6);
+				multwii_receiver.channels[3]=deserialize16(8);
+				multwii_receiver.channels[4]=deserialize16(10);
+				multwii_receiver.channels[5]=deserialize16(12);
+				multwii_receiver.channels[6]=deserialize16(14);
+				multwii_receiver.channels[7]=deserialize16(16);
+				multwii_receiver.channels[8]=deserialize16(18);
+				multwii_receiver.channels[9]=deserialize16(20);
+				multwii_receiver.channels[10]=deserialize16(22);
+				multwii_receiver.channels[11]=deserialize16(24);
 
 				//printf("Ch1 %d\nCh2 %d\nCh3 %d\nCh4 %d\nCh5 %d\nCh6 %d\nCh7 %d\nCh8 %d\nCh9 %d\nCh10 %d\nCh11 %d\nCh12 %d\n", vantData.getChannel(1), vantData.getChannel(2), vantData.getChannel(3), vantData.getChannel(4), vantData.getChannel(5), vantData.getChannel(6), vantData.getChannel(7), vantData.getChannel(8), vantData.getChannel(9), vantData.getChannel(10), vantData.getChannel(11), vantData.getChannel(12));
 			break;
 			case MSP_RCNORMALIZE:
 				//printf("RC Normalize message with %d bytes \n", tam);
-				receiver.normChannels[0]=(int16_t)deserialize16(2);//rcData[RC_CHANS]	16 x UINT 16	Range [1000;2000] ROLL/PITCH/YAW/THROTTLE/AUX1/AUX2/AUX3/AUX4
-				receiver.normChannels[1]=(int16_t)deserialize16(4);
-				receiver.normChannels[2]=(int16_t)deserialize16(6);
-				receiver.normChannels[3]=(int16_t)deserialize16(8);
-				receiver.normChannels[4]=(int16_t)deserialize16(10);
-				receiver.normChannels[5]=(int16_t)deserialize16(12);
-				receiver.normChannels[6]=(int16_t)deserialize16(14);
-				receiver.normChannels[7]=(int16_t)deserialize16(16);
-				receiver.normChannels[8]=(int16_t)deserialize16(18);
-				receiver.normChannels[9]=(int16_t)deserialize16(20);
-				receiver.normChannels[10]=(int16_t)deserialize16(22);
-				receiver.normChannels[11]=(int16_t)deserialize16(24);
+				multwii_receiver.normChannels[0]=(int16_t)deserialize16(2);//rcData[RC_CHANS]	16 x UINT 16	Range [1000;2000] ROLL/PITCH/YAW/THROTTLE/AUX1/AUX2/AUX3/AUX4
+				multwii_receiver.normChannels[1]=(int16_t)deserialize16(4);
+				multwii_receiver.normChannels[2]=(int16_t)deserialize16(6);
+				multwii_receiver.normChannels[3]=(int16_t)deserialize16(8);
+				multwii_receiver.normChannels[4]=(int16_t)deserialize16(10);
+				multwii_receiver.normChannels[5]=(int16_t)deserialize16(12);
+				multwii_receiver.normChannels[6]=(int16_t)deserialize16(14);
+				multwii_receiver.normChannels[7]=(int16_t)deserialize16(16);
+				multwii_receiver.normChannels[8]=(int16_t)deserialize16(18);
+				multwii_receiver.normChannels[9]=(int16_t)deserialize16(20);
+				multwii_receiver.normChannels[10]=(int16_t)deserialize16(22);
+				multwii_receiver.normChannels[11]=(int16_t)deserialize16(24);
 
 				//printf("Ch1 %d\nCh2 %d\nCh3 %d\nCh4 %d\nCh5 %d\nCh6 %d\nCh7 %d\nCh8 %d\nCh9 %d\nCh10 %d\nCh11 %d\nCh12 %d\n", vantData.getNormChannel(1), vantData.getNormChannel(2), vantData.getNormChannel(3), vantData.getNormChannel(4), vantData.getNormChannel(5), vantData.getNormChannel(6), vantData.getNormChannel(7), vantData.getNormChannel(8), vantData.getNormChannel(9), vantData.getNormChannel(10), vantData.getNormChannel(11), vantData.getNormChannel(12));
 			break;
 			case MSP_IDENT:
 				//printf("Ident message with %d bytes \n", tam);
-				ident.version=buffer[2];//VERSION	UINT 8	version of MultiWii
-				ident.multitype=buffer[3];//MULTITYPE	UINT 8	type of multi: /TRI/QUADP/QUADX/BI/GIMBAL/Y6/HEX6/FLYING_WING/Y4/HEX6X/OCTOX8/ OCTOFLATP/OCTOFLATX/AIRPLANE/HELI_120/HELI_90/VTAIL4/HEX6H/SINGLECOPTER/DUALCOPTER
-				ident.mspVersion=buffer[4];//MSP_VERSION	UINT 8	not used currently
-				ident.capability=deserialize32(5);//capability	UINT 32	A 32 bit variable to indicate capability of FC board. Currently, BIND button is used on first bit, DYNBAL on second, FLAP on third
+				multwii_ident.version=multwii_recmsg[2];//VERSION	UINT 8	version of MultiWii
+				multwii_ident.multitype=multwii_recmsg[3];//MULTITYPE	UINT 8	type of multi: /TRI/QUADP/QUADX/BI/GIMBAL/Y6/HEX6/FLYING_WING/Y4/HEX6X/OCTOX8/ OCTOFLATP/OCTOFLATX/AIRPLANE/HELI_120/HELI_90/VTAIL4/HEX6H/SINGLECOPTER/DUALCOPTER
+				multwii_ident.mspVersion=multwii_recmsg[4];//MSP_VERSION	UINT 8	not used currently
+				multwii_ident.capability=deserialize32(5);//capability	UINT 32	A 32 bit variable to indicate capability of FC board. Currently, BIND button is used on first bit, DYNBAL on second, FLAP on third
 
 				//printf("Version %d\nMultitype %d\nMspVersion %d\nCapability %d\n", vantData.getVersion(), vantData.getMultitype(), vantData.getMspVersion(), vantData.getCapability());
 			break;
 			case MSP_MOTOR_PINS:
 				//printf("Motor Pins message with %d bytes \n", tam);
-				motors.pwmPin[0]=buffer[2];	//8*PWM_PIN	8 x UNIT 8	motor pin indication
-				motors.pwmPin[1]=buffer[3];
-				motors.pwmPin[2]=buffer[4];
-				motors.pwmPin[3]=buffer[5];
-				motors.pwmPin[4]=buffer[6];
-				motors.pwmPin[5]=buffer[7];
-				motors.pwmPin[6]=buffer[8];
-				motors.pwmPin[7]=buffer[9];
+				multwii_motors.pwmPin[0]=multwii_recmsg[2];	//8*PWM_PIN	8 x UNIT 8	motor pin indication
+				multwii_motors.pwmPin[1]=multwii_recmsg[3];
+				multwii_motors.pwmPin[2]=multwii_recmsg[4];
+				multwii_motors.pwmPin[3]=multwii_recmsg[5];
+				multwii_motors.pwmPin[4]=multwii_recmsg[6];
+				multwii_motors.pwmPin[5]=multwii_recmsg[7];
+				multwii_motors.pwmPin[6]=multwii_recmsg[8];
+				multwii_motors.pwmPin[7]=multwii_recmsg[9];
 
 				//printf("Ch1 %d\nCh2 %d\nCh3 %d\nCh4 %d\nCh5 %d\nCh6 %d\nCh7 %d\nCh8 %d\n", vantData.getPwmPin(1), vantData.getPwmPin(2), vantData.getPwmPin(3), vantData.getPwmPin(4), vantData.getPwmPin(5), vantData.getPwmPin(6), vantData.getPwmPin(7), vantData.getPwmPin(8));
 			break;
 			case MSP_MOTOR:
 				//printf("Motor Speed message with %d bytes \n", tam);
-				actuation.escLeftSpeed=(int16_t) deserialize16(2);	//Motor*8	16 x UINT 16	Range [1000;2000]
-				actuation.escRightSpeed=(int16_t) deserialize16(4);
-				motors.motorSpeed[2]=deserialize16(6);
-				motors.motorSpeed[3]=deserialize16(8);
-				motors.motorSpeed[4]=deserialize16(10);
-				motors.motorSpeed[5]=deserialize16(12);
-				motors.motorSpeed[6]=deserialize16(14);
-				motors.motorSpeed[7]=deserialize16(16);
+				multwii_actuation2.escLeftSpeed=(int16_t) deserialize16(2);	//Motor*8	16 x UINT 16	Range [1000;2000]
+				multwii_actuation2.escRightSpeed=(int16_t) deserialize16(4);
+				multwii_motors.motorSpeed[2]=deserialize16(6);
+				multwii_motors.motorSpeed[3]=deserialize16(8);
+				multwii_motors.motorSpeed[4]=deserialize16(10);
+				multwii_motors.motorSpeed[5]=deserialize16(12);
+				multwii_motors.motorSpeed[6]=deserialize16(14);
+				multwii_motors.motorSpeed[7]=deserialize16(16);
 
 				//printf("M1 %f\nM2 %f\nM3 %d\nM4 %d\nM5 %d\nM6 %d\nM7 %d\nM8 %d\n", vantData.getEscLeftSpeed(), vantData.getEscRightSpeed(), vantData.getMotorSpeed(3), vantData.getMotorSpeed(4), vantData.getMotorSpeed(5), vantData.getMotorSpeed(6), vantData.getMotorSpeed(7), vantData.getMotorSpeed(8));
 			break;
 			case MSP_SERVO:
 				//printf("Servo message with %d bytes \n", tam);
-				motors.servos[0]=(int16_t)deserialize16(2); //Servo*8	16 x UINT 16	Range [1000;2000] The servo order depends on multi type
-				motors.servos[1]=(int16_t)deserialize16(4);
-				motors.servos[2]=(int16_t)deserialize16(6);
-				motors.servos[3]=(int16_t)deserialize16(8);
-				actuation.servoLeft=(int16_t)deserialize16(10);
-				actuation.servoRight=(int16_t)deserialize16(12);
-				motors.servos[6]=(int16_t)deserialize16(14);
-				motors.servos[7]=(int16_t)deserialize16(16);
+				multwii_motors.servos[0]=(int16_t)deserialize16(2); //Servo*8	16 x UINT 16	Range [1000;2000] The servo order depends on multi type
+				multwii_motors.servos[1]=(int16_t)deserialize16(4);
+				multwii_motors.servos[2]=(int16_t)deserialize16(6);
+				multwii_motors.servos[3]=(int16_t)deserialize16(8);
+				multwii_actuation2.servoLeft=(int16_t)deserialize16(10);
+				multwii_actuation2.servoRight=(int16_t)deserialize16(12);
+				multwii_motors.servos[6]=(int16_t)deserialize16(14);
+				multwii_motors.servos[7]=(int16_t)deserialize16(16);
 
 				//printf("S1 %d\nS2 %d\nS3 %d\nS4 %d\nS5 %f\nS6 %f\nS7 %d\nS8 %d\n", vantData.getServo(1), vantData.getServo(2), vantData.getServo(3), vantData.getServo(4), vantData.getServoLeft(), vantData.getServoRight(), vantData.getServo(5), vantData.getServo(6));
 			break;
 			case MSP_DEBUG:
 				//printf("Debug message with %d bytes \n", tam);
-				debug.debug[0]=(int16_t)deserialize16(2);
-				debug.debug[1]=(int16_t)deserialize16(4);
-				debug.debug[2]=(int16_t)deserialize16(6);
-				debug.debug[3]=(int16_t)deserialize16(8);
+				multwii_debug.debug[0]=(int16_t)deserialize16(2);
+				multwii_debug.debug[1]=(int16_t)deserialize16(4);
+				multwii_debug.debug[2]=(int16_t)deserialize16(6);
+				multwii_debug.debug[3]=(int16_t)deserialize16(8);
 
 				//printf("D1 %d\nD2 %d\nD3 %d\nD4 %d\n", vantData.getDebug(1), vantData.getDebug(2), vantData.getDebug(3), vantData.getDebug(4));
 			break;
 			case MSP_RAW_IMU:
 				//printf("Raw IMU message with %d bytes \n", tam);
-				imu.gyrRaw[0]=(int16_t)deserialize16(2); //gyrx	INT 16	unit: it depends on GYRO sensor. For MPU6050, 1 unit = 1/4.096 deg/s
-				imu.gyrRaw[1]=(int16_t)deserialize16(4); //gyry	INT 16
-				imu.gyrRaw[2]=(int16_t)deserialize16(6); //gyrz	INT 16
-				imu.accRaw[0]=(int16_t)deserialize16(8); //accx	INT 16	unit: it depends on ACC sensor and is based on ACC_1G definition MMA7455 64 / MMA8451Q 512 / ADXL345 265 / BMA180 255 / BMA020 63 / NUNCHUCK 200 / LIS3LV02 256 / LSM303DLx_ACC 256 / MPU6050 512 / LSM330 256
-				imu.accRaw[1]=(int16_t)deserialize16(10); //accy	INT 16
-				imu.accRaw[2]=(int16_t)deserialize16(12); //accz	INT 16
-				imu.magRaw[0]=(int16_t)deserialize16(14); //magx	INT 16	unit: it depends on MAG sensor.
-				imu.magRaw[1]=(int16_t)deserialize16(16); //magy	INT 16
-				imu.magRaw[2]=(int16_t)deserialize16(18); //magz	INT 16
+				multwii_imu.gyrRaw[0]=(int16_t)deserialize16(2); //gyrx	INT 16	unit: it depends on GYRO sensor. For MPU6050, 1 unit = 1/4.096 deg/s
+				multwii_imu.gyrRaw[1]=(int16_t)deserialize16(4); //gyry	INT 16
+				multwii_imu.gyrRaw[2]=(int16_t)deserialize16(6); //gyrz	INT 16
+				multwii_imu.accRaw[0]=(int16_t)deserialize16(8); //accx	INT 16	unit: it depends on ACC sensor and is based on ACC_1G definition MMA7455 64 / MMA8451Q 512 / ADXL345 265 / BMA180 255 / BMA020 63 / NUNCHUCK 200 / LIS3LV02 256 / LSM303DLx_ACC 256 / MPU6050 512 / LSM330 256
+				multwii_imu.accRaw[1]=(int16_t)deserialize16(10); //accy	INT 16
+				multwii_imu.accRaw[2]=(int16_t)deserialize16(12); //accz	INT 16
+				multwii_imu.magRaw[0]=(int16_t)deserialize16(14); //magx	INT 16	unit: it depends on MAG sensor.
+				multwii_imu.magRaw[1]=(int16_t)deserialize16(16); //magy	INT 16
+				multwii_imu.magRaw[2]=(int16_t)deserialize16(18); //magz	INT 16
 
 				//printf("G1 %d\nG2 %d\nG3 %d\nA1 %d\nA2 %d\nA3 %d\nM1 %d\nM2 %d\nM3 %d\n", vantData.getGyro(1), vantData.getGyro(2), vantData.getGyro(3), vantData.getAcc(1), vantData.getAcc(2), vantData.getAcc(3), vantData.getMag(1), vantData.getMag(2), vantData.getMag(3));
 			break;
 			case MSP_CONTROLDATAIN:
 				//printf("Control Data in message with %d bytes \n", tam);
-				attitude.roll=decodeFloat(2);
-				attitude.pitch=decodeFloat(6);
-				attitude.yaw=decodeFloat(10);
+				multwii_attitude.roll=decodeFloat(2);
+				multwii_attitude.pitch=decodeFloat(6);
+				multwii_attitude.yaw=decodeFloat(10);
 
-				attitude.dotRoll=decodeFloat(14);
-				attitude.dotPitch=decodeFloat(18);
-				attitude.dotYaw=decodeFloat(22);
+				multwii_attitude.dotRoll=decodeFloat(14);
+				multwii_attitude.dotPitch=decodeFloat(18);
+				multwii_attitude.dotYaw=decodeFloat(22);
 
-				position.x=decodeFloat(26);
-				position.y=decodeFloat(30);
-				position.z=decodeFloat(34);
+				multwii_position.x=decodeFloat(26);
+				multwii_position.y=decodeFloat(30);
+				multwii_position.z=decodeFloat(34);
 
-				position.dotX=decodeFloat(38);
-				position.dotY=decodeFloat(42);
-				position.dotZ=decodeFloat(46);
+				multwii_position.dotX=decodeFloat(38);
+				multwii_position.dotY=decodeFloat(42);
+				multwii_position.dotZ=decodeFloat(46);
 
 				//printf("Roll %f\nPitch %f\nYaw %f\nDRoll %f\nDPitch %f\nDYaw %f\nX %f\nY %f\nZ %f\nDX %f\nDY %f\nDZ %f\n", vantData.getRoll(), vantData.getPitch(), vantData.getYaw(), vantData.getDotRoll(), vantData.getDotPitch(), vantData.getDotYaw(), vantData.getX(), vantData.getY(), vantData.getZ(), vantData.getDotX(), vantData.getDotY(), vantData.getDotZ());
 			break;
 			case MSP_CONTROLDATAOUT:
 				//printf("Control Data Out message with %d bytes \n", tam);
-				actuation.servoLeft=decodeFloat(2);
-				actuation.escLeftNewtons=decodeFloat(6);
-				actuation.escLeftSpeed=decodeFloat(10);
-				actuation.servoRight=decodeFloat(14);
-				actuation.escRightNewtons=decodeFloat(18);
-				actuation.escRightSpeed=decodeFloat(22);
+				multwii_actuation.servoLeft=decodeFloat(2);
+				multwii_actuation.escLeftNewtons=decodeFloat(6);
+				multwii_actuation.escLeftSpeed=decodeFloat(10);
+				multwii_actuation.servoRight=decodeFloat(14);
+				multwii_actuation.escRightNewtons=decodeFloat(18);
+				multwii_actuation.escRightSpeed=decodeFloat(22);
 
 				//printf("ServoLeft %f\nEscLeftNewton %f\nEscLeftSpeed %f\nServoRight %f\nEscRightNewton %f\nEscRightSpeed %f\n", vantData.getServoLeft(), vantData.getEscLeftNewtons(), vantData.getEscLeftSpeed(), vantData.getServoRight(), vantData.getEscRightNewtons(), vantData.getEscRightSpeed());
 			break;
 			case MSP_ESCDATA:
 				//printf("ESC Data message with %d bytes \n", tam);
-				esc.rpm[0]=(int16_t)deserialize16(2);
-				esc.current[0]=decodeFloat(4);
-				esc.voltage[0]=decodeFloat(8);
-				esc.rpm[1]=(int16_t)deserialize16(12);
-				esc.current[1]=decodeFloat(14);
-				esc.voltage[1]=decodeFloat(18);
+				multwii_esc.rpm[0]=(int16_t)deserialize16(2);
+				multwii_esc.current[0]=decodeFloat(4);
+				multwii_esc.voltage[0]=decodeFloat(8);
+				multwii_esc.rpm[1]=(int16_t)deserialize16(12);
+				multwii_esc.current[1]=decodeFloat(14);
+				multwii_esc.voltage[1]=decodeFloat(18);
 
 				//printf("RPM1 %f\nCurrent1 %f\nVoltage1 %f\nRPM2 %f\nCurrent2 %f\nVoltage2 %f\n", vantData.getRpm(0), vantData.getCurrent(0), vantData.getVoltage(0), vantData.getRpm(1), vantData.getCurrent(1), vantData.getVoltage(1));
 			break;
@@ -373,8 +373,8 @@ void decodeMessage(USART_TypeDef* USARTx,uint8_t tam, uint8_t msg){
 	}
 }
 
-pv_type_actuation  c_common_datapr_multwii_getattitude(){
-	return actuation;
+pv_type_actuation  c_common_datapr_multwii_getactuation(){
+	return multwii_actuation;
 }
 
 ///////////////////////////////////////////////////////
@@ -632,7 +632,8 @@ int c_common_datapr_multiwii_receivestack(USART_TypeDef* USARTx){
 	unsigned char byte;
 	uint8_t tam, msg;
 	byte=c_common_usart_read(USARTx);
-	while(byte != '$' && c_common_usart_available2(USARTx) > 0){
+
+	while(byte != '$' && c_common_usart_available2(USARTx) > 0 ){
 		byte=c_common_usart_read(USARTx);
 	}
 	if(c_common_usart_available2(USARTx) == 0){
@@ -645,10 +646,10 @@ int c_common_datapr_multiwii_receivestack(USART_TypeDef* USARTx){
 			if(byte == '>'){
 				//cout << "Inicio da mensagem!" << endl;
 				byte=c_common_usart_read(USARTx);
-				buffer[0] = byte;
+				multwii_recmsg[0] = byte;
 				tam = (uint8_t) byte;
 				byte=c_common_usart_read(USARTx);
-				buffer[1] = byte;
+				multwii_recmsg[1] = byte;
 				msg = (uint8_t) byte;
 				//printf("%d\n%d\n", tam, msg);
 				decodeMessage(USARTx,tam, msg);

@@ -183,8 +183,8 @@ void c_io_servos_writeTorque(float torqueRight, float torqueLeft)
 	int16_t sp_torqL;
 
 	// Calculo do set point
-	sp_torqR=(int16_t)((torqueRight*1023)/2.35);  // O registrador dos servos precisa de 0 ate 1023 -> dinamica direta
-	sp_torqL=(int16_t)((torqueLeft*1023)/2.35);
+	sp_torqR=(int16_t)(torqueRight*1023*0.425531915);  // O registrador dos servos precisa de 0 ate 1023 -> dinamica direta
+	sp_torqL=(int16_t)(torqueLeft*1023*0.425531915);
 
 	//c_io_herkulex_setTorque2Servos(oInputData.servoRight.ID,torq,oInputData.servoLeft.ID,-torq);
 	if((alphaRight>0.9*(PI/2) && sp_torqR>0) || (alphaRight<-0.9*(PI/2) && sp_torqR<0))

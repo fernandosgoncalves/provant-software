@@ -23,7 +23,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define MODULE_PERIOD	 15//ms
+#define MODULE_PERIOD	 6//ms
 #define ESC_ON           1
 #define SERVO_ON         1
 
