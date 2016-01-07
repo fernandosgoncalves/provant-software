@@ -55,7 +55,7 @@
 #include "queue.h"
 #include "task.h"
 
- /* kernel includes */
+/* kernel includes */
 #include "c_common_gpio.h"
 #include "c_common_i2c.h"
 #include "c_common_uart.h"

@@ -35,9 +35,9 @@
 /* Includes ------------------------------------------------------------------*/
 /* Exported types ------------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
-#define C_IO_IMU_USE_ITG_ADXL_HMC
+//#define C_IO_IMU_USE_ITG_ADXL_HMC
 //#define C_IO_IMU_USE_MPU6050_HMC5883
-//#define C_IO_IMU_USE_GY_87
+#define C_IO_IMU_USE_GY_87
 
 /* Exported constants --------------------------------------------------------*/
 #define PV_IMU_ROLL        0

@@ -631,12 +631,17 @@ void c_common_datapr_multwii_sendstack(USART_TypeDef* USARTx)
 int c_common_datapr_multiwii_receivestack(USART_TypeDef* USARTx){
 	unsigned char byte;
 	uint8_t tam, msg;
+
+	unsigned long now = 0, timeOut;
+	now = c_common_utils_millis();
+	timeOut = 1 + now;
 	byte=c_common_usart_read(USARTx);
 
-	while(byte != '$' && c_common_usart_available2(USARTx) > 0 ){
+	while(byte != '$' && c_common_usart_available2(USARTx) > 0){
 		byte=c_common_usart_read(USARTx);
+		now = c_common_utils_millis();
 	}
-	if(c_common_usart_available2(USARTx) == 0){
+	if(c_common_usart_available2(USARTx) == 0 ){
 		return -1;
 	}
 	else{

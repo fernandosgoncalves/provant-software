@@ -241,7 +241,7 @@ void c_common_i2c_init(I2C_TypeDef* I2Cx){
  */
 void c_common_i2c_start(I2C_TypeDef* I2Cx, uint8_t address, uint8_t direction)
 {
-//    taskENTER_CRITICAL();
+    taskENTER_CRITICAL();
         // wait until I2C1 is not busy anymore
 		timeoutCounter = c_common_utils_millis();
 //		timeoutCounter = c_common_utils_micros();
@@ -338,7 +338,7 @@ uint8_t c_common_i2c_readNack(I2C_TypeDef* I2Cx) {
 void c_common_i2c_stop(I2C_TypeDef* I2Cx) {
         // Send I2C1 STOP Condition
         I2C_GenerateSTOP(I2Cx, ENABLE);
-//        taskEXIT_CRITICAL();
+        taskEXIT_CRITICAL();
 }
 
 /** \brief Lê uma quantidade de bytes de um dado endereço em um determinado dispositivo.
