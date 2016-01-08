@@ -153,7 +153,7 @@ Eigen::MatrixXf MpcBirotor::Controler(Eigen::MatrixXf states,bool stop){
 		u.setZero();
 	}else{
 		//Vectors of reference trajectory and control
-		xs<<0,0,states(2),states.block(3,0,5,1),0,0,0,states.block(11,0,5,1);
+		xs<<0,0,1,states.block(3,0,5,1),0,0,0,states.block(11,0,5,1);
 		xr=trajectory->TrajetoryReference_MPC(k);
 		std::cout<<"z= "<<xr(2)<<std::endl;
 		ar=trajectory->AcelerationReference(k);

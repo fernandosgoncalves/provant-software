@@ -31,7 +31,7 @@ public:
     //ModuleManager* mm;
     //DataProcessingManager* dm;
 };
-
+//static boost::asio::io_service io;
 int main(int argc, char ** argv) {
     DataProcessingManager DataProcessing("DataProcessing:Manager");
     ContinuousControlManager   ContinuousControl("ContinuousControl:Manager");  //AQUI
@@ -54,9 +54,14 @@ int main(int argc, char ** argv) {
     CommLowLevel.interface->q_actuation2_out_ = &DataProcessing.interface->q_actuation_in; //Aqui
     CommLowLevel.interface->q_status2_out_= &ContinuousControl.interface->q_status_in; //Aqui
 
-    boost::thread th1( boost::bind( &CommLowLevelManager::Run, CommLowLevel) ); //AQUI
-    boost::thread th2( boost::bind( &ContinuousControlManager::Run, ContinuousControl) ); //AQUI
-    boost::thread th3( boost::bind( &DataProcessingManager::Run, DataProcessing) ); //AQUI
+//    boost::asio::deadline_timer periodo(io,boost::posix_time::milliseconds(12));
+//
+//    ContinuousControlManager::Run.async_wait
+
+    boost::thread th1( boost::bind( &CommLowLevelManager::Run, CommLowLevel)); //AQUI
+    boost::thread th2( boost::bind( &ContinuousControlManager::Run, ContinuousControl)); //AQUI
+    boost::thread th3( boost::bind( &DataProcessingManager::Run, DataProcessing)); //AQUI
+
 
     th1.join();
     th2.join();

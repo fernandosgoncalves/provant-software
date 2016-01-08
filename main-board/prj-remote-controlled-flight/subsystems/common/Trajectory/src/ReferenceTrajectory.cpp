@@ -68,11 +68,11 @@ Eigen::MatrixXf ReferenceTrajectory::TrajetoryReference_MPC(long auxk){
 	R.setZero();
 	x=0;
 	y=0;
-	z=0.048;
+	z=1;
 	//z=3*(1-exp(-0.9*k));
 	phi=0.0000890176;
 	theta=0.0154833;
-	psi=0.4887;
+	psi=0;
 	//std::cout<<"->"<<psi<<std::endl;
 	alphar=-0.0154821;
 	alphal=-0.0153665;

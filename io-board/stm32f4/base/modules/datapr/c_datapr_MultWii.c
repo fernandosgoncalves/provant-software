@@ -641,7 +641,8 @@ int c_common_datapr_multiwii_receivestack(USART_TypeDef* USARTx){
 		byte=c_common_usart_read(USARTx);
 		now = c_common_utils_millis();
 	}
-	if(c_common_usart_available2(USARTx) == 0 ){
+
+	if(c_common_usart_available2(USARTx) == 0 || byte!='$'){
 		return -1;
 	}
 	else{

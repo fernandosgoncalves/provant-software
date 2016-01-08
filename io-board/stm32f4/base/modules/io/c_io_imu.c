@@ -416,6 +416,7 @@ float mag_tmp[3]={0};
          * ±8g  4096 LSB/g
          * ±16g 2048 LSB/g
        	 */
+
        	c_io_imu_MPU6050_getMotion6(&buffer[0],&buffer[1],&buffer[2],&buffer[3],&buffer[4],&buffer[5]);
        	//c_io_imu_MPU6050_getAcceleration(&buffer[0],&buffer[1],&buffer[2]);
 

@@ -24,6 +24,8 @@
 #include "LQRControler.h"
 #include "TESTActuator.h"
 #include "math.h"
+#include <boost/chrono.hpp>
+#include <boost/system/config.hpp>
 
 //Interface
 #include "ContinuousControlInterface.h"
@@ -68,8 +70,11 @@ private:
     MPCBirotor::MpcBirotor * mpcbirotor;
     LQR::LQRControler * lqr;
     TEST::TESTActuator * test;
+    boost::chrono::system_clock::time_point start;
+    boost::chrono::system_clock::time_point last_start;
     // Nome do modulo
     std::string name_;
+    typedef boost::chrono::milliseconds ms;
 
     /*! \brief Callback de recebimento de mensagem
      *

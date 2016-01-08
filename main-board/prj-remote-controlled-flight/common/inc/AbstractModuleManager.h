@@ -21,7 +21,7 @@
 
 //Boost
 #include <boost/thread.hpp>
-
+#include <boost/chrono.hpp>
 
 /*! \brief Gerenciador padrão para módulos.
  *

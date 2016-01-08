@@ -130,6 +130,8 @@ target_link_libraries(${PROJECT_NAME}
                         pthread
                         boost_system
                         boost_thread
+			boost_chrono
+			rt
                         boost_log
                         boost_log_setup
 			qpOASES

@@ -167,7 +167,7 @@ void AircraftModel::LinearModel(Eigen::MatrixXf as, float ts, Eigen::MatrixXf * 
 Eigen::MatrixXf AircraftModel::MatrixSumRho(){
 	using namespace Eigen;
 	VectorXf Rho(18);
-	Rho<<0,0,30,1.2159,1.2159,0.3040,1.2159,1.2159,0,0,0,0,0,0,0.001,0.001,1500,1500.1982;
+	Rho<<0,0,30,1.2159,1.2159,0.3040,0.12159,0.12159,0,0,0,0,0,0,0,0,1500,1500.1982;
 	return Rho.asDiagonal();
 }
 Eigen::MatrixXf AircraftModel::MatrixSumLambda(){
