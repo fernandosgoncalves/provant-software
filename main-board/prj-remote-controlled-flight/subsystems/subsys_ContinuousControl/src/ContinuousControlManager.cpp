@@ -24,6 +24,7 @@
 #include <string>
 
 
+
 using namespace Eigen;
 using namespace loadmodel;
 using namespace std;
@@ -36,9 +37,9 @@ ContinuousControlManager::ContinuousControlManager(std::string name) :
 {
 	//mpc=new MPC::MpcControler();
 	//mpcload=new MPCLOAD::MpcLoad();
-	mpcbirotor=new MPCBirotor::MpcBirotor();
+	//mpcbirotor=new MPCBirotor::MpcBirotor();
 	//mpc=new MPC::MpcControler();
-	//lqr=new LQR::LQRControler();
+	lqr=new LQR::LQRControler();
 	//test= new TEST::TESTActuator();
 }
 
@@ -79,6 +80,7 @@ void ContinuousControlManager::Run()
     int i=0;
     // Matrix class
     MatrixXf xs(16,1);
+    MatrixXf ref(3,1);
     MatrixXf channels(4,1);
     MatrixXf u(4,1);
     start = boost::chrono::system_clock::now();
@@ -90,7 +92,9 @@ void ContinuousControlManager::Run()
 
     while(1) {
     	start= boost::chrono::system_clock::now();
-    	auto aux= boost::chrono::system_clock::now();
+    	auto sample_time = boost::chrono::duration_cast<boost::chrono::microseconds>(start-last_start);
+    	last_start=start;
+
     	if(interface->pop(atitude, &interface->q_atitude_in)){
     		/*Atitude*/
 //    		cout<<"Atitude Received C"<<endl;
@@ -146,11 +150,13 @@ void ContinuousControlManager::Run()
     	xs.setZero();
     	xs<<position.x,position.y,position.z,atitude.roll,atitude.pitch,atitude.yaw,servos.alphar,servos.alphal
     			,position.dotX,position.dotY,position.dotZ,atitude.dotRoll,atitude.dotPitch,atitude.dotYaw,servos.dotAlphar,servos.dotAlphal;
-
+    	ref<<(float)debug.debug[0]/100.0,(float)debug.debug[1]/100.0,(float)debug.debug[2]/100.0;
+    	std::cout<<ref<<std::endl;
     	//u=mpc->Controler(xs);
-    	//u=lqr->Controler(xs,status.stop);
+
+    	u=lqr->Controler(xs,ref,status.stop);
     	//u=mpcload->Controler(xs);
-    	u=mpcbirotor->Controler(xs,status.stop);
+    	//u=mpcbirotor->Controler(xs,status.stop);
     	//u=test->Controler(channels);
 
 
@@ -163,33 +169,15 @@ void ContinuousControlManager::Run()
     	actuation.escLeftSpeed=0;
     	actuation.escRightSpeed=0;
 
-    	//    	cout<<"C-sample:"<<ms_sample_time<<endl;
 
     	interface->push(actuation, interface->q_actuation_out_);
     	interface->push(actuation, interface->q_actuation2_out_);
 
-    	//Elapsed time code
 
-//    	auto sampletime = boost::chrono::duration_cast<boost::chrono::microseconds>(start-last_start);
-//    	last_start=start;
-//    	std::cout << "It took me " << (float)(sampletime.count()/1000.0) << " miliseconds." << std::endl;
-//    	i++;
-//
-
-//    	std::cout << "ms_sample_time " << ms_sample_time << " miliseconds." << std::endl;
-//    	std::cout << "ms_cicle_time " << ms_cicle_time << " miliseconds." << std::endl;
-//    	std::cout << "sleep_time " << sleep_time << " miliseconds." << std::endl;
-
-    	start= boost::chrono::system_clock::now();
-    	boost::chrono::duration<double> sec = start-last_start;
-    	last_start=start;
-    	std::cout << "elapsed_time " << sec.count()*1000 << " miliseconds." << std::endl;
+    	std::cout << "sp_thread2: " << sample_time.count()<< " microseconds." << std::endl;
     	i++;
-    	//boost::this_thread::sleep(boost::posix_time::milliseconds(ms_sample_time));
-    	auto elapsed = boost::chrono::duration_cast<boost::chrono::microseconds>(boost::chrono::system_clock::now() - aux);
-    	int ms_cicle_time=(int)(elapsed.count());
-    	int sleep_time=12000-ms_cicle_time;
-    	boost::this_thread::sleep_for(boost::chrono::microseconds(sleep_time));
+    	auto elapsed = boost::chrono::duration_cast<boost::chrono::microseconds>(boost::chrono::system_clock::now()-start);
+    	boost::this_thread::sleep_until(boost::chrono::system_clock::now() + boost::chrono::microseconds((ms_sample_time*1000)-elapsed.count()));
     }
 }
 

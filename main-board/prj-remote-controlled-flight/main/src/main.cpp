@@ -23,6 +23,10 @@
 
 // Boost
 #include <boost/thread/thread.hpp>
+#include <unistd.h>
+#include <sched.h>
+#include <cstdio>
+
 class mainManager {
 public:
     mainManager() {}
@@ -33,6 +37,10 @@ public:
 };
 //static boost::asio::io_service io;
 int main(int argc, char ** argv) {
+	int policy;
+	pthread_t threadID;
+	struct sched_param param;
+
     DataProcessingManager DataProcessing("DataProcessing:Manager");
     ContinuousControlManager   ContinuousControl("ContinuousControl:Manager");  //AQUI
     CommLowLevelManager        CommLowLevel("CommLowLevel:Manager");  //AQUI
@@ -59,11 +67,14 @@ int main(int argc, char ** argv) {
 //    ContinuousControlManager::Run.async_wait
 
     boost::thread th1( boost::bind( &CommLowLevelManager::Run, CommLowLevel)); //AQUI
-    boost::thread th2( boost::bind( &ContinuousControlManager::Run, ContinuousControl)); //AQUI
-    boost::thread th3( boost::bind( &DataProcessingManager::Run, DataProcessing)); //AQUI
 
 
-    th1.join();
-    th2.join();
+	boost::thread th2( boost::bind( &ContinuousControlManager::Run, ContinuousControl)); //AQUI
+
+
+	boost::thread th3( boost::bind( &DataProcessingManager::Run, DataProcessing)); //AQUI
+
     th3.join();
+    th2.join();
+    th1.join();
 }

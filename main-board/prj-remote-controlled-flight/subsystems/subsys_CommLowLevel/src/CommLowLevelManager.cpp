@@ -85,7 +85,10 @@ void CommLowLevelManager::Run()
     actuation.escRightSpeed=0;
     // Loop principal!
     while(1) {
-    	auto start = std::chrono::steady_clock::now();
+    	start= boost::chrono::system_clock::now();
+    	auto sample_time = boost::chrono::duration_cast<boost::chrono::microseconds>(start-last_start);
+    	last_start=start;
+
     	/*Recive states from Discovery*/
     	flag=PROVANT.updateData();
 
@@ -105,11 +108,14 @@ void CommLowLevelManager::Run()
     	if(servos_aux.alphal!=0 || servos_aux.alphar!=0 || servos_aux.dotAlphal!=0 || servos_aux.dotAlphar!=0){
     		servos=servos_aux;
     	}
-
+    	debug_aux=PROVANT.getVantData().getDebug();
+    	if(debug_aux.debug[0]!=0 || debug_aux.debug[1]!=0 || debug_aux.debug[2]!=0){
+    		debug=debug_aux;
+    	}
 
     	//rcNormalize= PROVANT.getVantData().getNormChannels();
     	status=PROVANT.getVantData().getStatus();
-    	debug=PROVANT.getVantData().getDebug();
+
 
     	//Send Control to Discovery
     	if(interface->pop(actuation, &interface->q_actuation_in)){
@@ -145,7 +151,10 @@ void CommLowLevelManager::Run()
 //    	std::cout << "It took me " << (float)(elapsed.count()/1000) << " miliseconds." << std::endl;
 
     	i++;
-    	boost::this_thread::sleep(boost::posix_time::milliseconds(ms_sample_time));
+    	std::cout << "sp_thread1: " << sample_time.count()<< " microseconds." << std::endl;
+    	i++;
+    	auto elapsed = boost::chrono::duration_cast<boost::chrono::microseconds>(boost::chrono::system_clock::now()-start);
+    	boost::this_thread::sleep_until(boost::chrono::system_clock::now() + boost::chrono::microseconds((ms_sample_time*1000)-elapsed.count()));
     }
 }
 

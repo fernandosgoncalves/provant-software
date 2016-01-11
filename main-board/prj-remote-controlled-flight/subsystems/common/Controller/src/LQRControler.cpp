@@ -47,7 +47,7 @@ LQRControler::~LQRControler() {
 	// TODO Auto-generated destructor stub
 }
 
-Eigen::MatrixXf LQRControler::Controler(Eigen::MatrixXf states,bool stop){
+Eigen::MatrixXf LQRControler::Controler(Eigen::MatrixXf states,Eigen::MatrixXf ref,bool stop){
 
 	if(stop){
 		xs.setZero();
@@ -73,8 +73,8 @@ Eigen::MatrixXf LQRControler::Controler(Eigen::MatrixXf states,bool stop){
 		deltaxsi.setZero();
 	}else{
 		//Vectors of reference trajectory and control
-		xs<<0,0,1,states.block(3,0,5,1),0,0,0,states.block(11,0,5,1);
-		xr=trajectory->TrajetoryReference_LQR();
+		xs<<0,0,states(2),states.block(3,0,5,1),0,0,states(8),states.block(11,0,5,1);
+		xr=trajectory->TrajetoryReference_LQR(ref);
 
 		//Vector integration of error(Trapezoidal method)
 		deltaxsi<<xs(2,0)-xr(2,0),xs(5,0)-xr(5,0);

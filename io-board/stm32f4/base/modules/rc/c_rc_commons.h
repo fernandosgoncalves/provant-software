@@ -108,7 +108,7 @@
 //	#define REF_ROLL_BIAS		0.0 //radians
 //	#define REF_ROLL_BIAS		-0.0087 //radians
 	#define REF_ROLL_BIAS		0.0175//-0.0087 //radians
-	#define REF_ROLL_MAX		0.15 //radians
+	#define REF_ROLL_MAX		0.20 //radians
 //	#define REF_PITCH_MAX		0.2 //radians
     #define REF_PITCH_MAX		0.20 //radians
 //	#define REF_PITCH_BIAS		0.148 //radians //funciona no chowdhurry

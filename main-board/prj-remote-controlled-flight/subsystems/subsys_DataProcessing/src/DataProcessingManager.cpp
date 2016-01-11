@@ -28,7 +28,7 @@ using namespace std;
 DataProcessingManager::DataProcessingManager(std::string name) :
     interface(new DataProcessingInterface("DataProcessing:Interface")),
     // sm1(new SubModule1), // talvez fosse mais interessante construir os submodulos no init
-    ms_sample_time(15),
+    ms_sample_time(12),
     name_(name)
 {
 
@@ -84,8 +84,10 @@ void DataProcessingManager::Run()
 
     // Loop principal!
     while(1) {
-        //...
-//    	auto start2 = std::chrono::steady_clock::now();
+    	start= boost::chrono::system_clock::now();
+    	auto sample_time = boost::chrono::duration_cast<boost::chrono::microseconds>(start-last_start);
+    	last_start=start;
+
     	if(interface->pop(atitude, &interface->q_atitude_in)){
     		/*Atitude*/
     		rpy[0]=atitude.roll;
@@ -147,10 +149,11 @@ void DataProcessingManager::Run()
     	//PROVANT2.multwii2_rcNormalize(normChannels);
     	PROVANT2.multwii_debug((float)debugv[0],(float)debugv[1],(float)debugv[2],(float)debugv[3]);
     	PROVANT2.multwii_sendstack();
-//    	auto end2 = std::chrono::steady_clock::now();
-//    	auto elapsed2 = std::chrono::duration_cast<std::chrono::microseconds>(end2 - start2);
-//      std::cout << "It took me 2: " << (float)(elapsed2.count()/1000) << " miliseconds." << std::endl;
-    	boost::this_thread::sleep(boost::posix_time::milliseconds(ms_sample_time));
+
+    	std::cout << "sp_thread3: " << sample_time.count()<< " microseconds." << std::endl;
+    	i++;
+    	auto elapsed = boost::chrono::duration_cast<boost::chrono::microseconds>(boost::chrono::system_clock::now()-start);
+    	boost::this_thread::sleep_until(boost::chrono::system_clock::now() + boost::chrono::microseconds((ms_sample_time*1000)-elapsed.count()));
     }
 }
 

@@ -634,15 +634,17 @@ int c_common_datapr_multiwii_receivestack(USART_TypeDef* USARTx){
 
 	unsigned long now = 0, timeOut;
 	now = c_common_utils_millis();
-	timeOut = 1 + now;
+	timeOut = 2 + now;
 	byte=c_common_usart_read(USARTx);
 
-	while(byte != '$' && c_common_usart_available2(USARTx) > 0){
+	while(byte != '$' && c_common_usart_available2(USARTx) > 0 && (long)(now - timeOut) <= 0){
 		byte=c_common_usart_read(USARTx);
 		now = c_common_utils_millis();
 	}
-
-	if(c_common_usart_available2(USARTx) == 0 || byte!='$'){
+	if(now >= timeOut){
+			return -2;
+		}
+	if(c_common_usart_available2(USARTx) == 0 || byte!='$' || now >= timeOut){
 		return -1;
 	}
 	else{

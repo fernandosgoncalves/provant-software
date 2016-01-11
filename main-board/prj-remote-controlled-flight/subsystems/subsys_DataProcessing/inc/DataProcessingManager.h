@@ -61,7 +61,8 @@ private:
 
     // Tempo de amostragem para loop principal
     int ms_sample_time;
-
+    boost::chrono::system_clock::time_point start;
+    boost::chrono::system_clock::time_point last_start;
     // Nome do modulo
     std::string name_;
 
