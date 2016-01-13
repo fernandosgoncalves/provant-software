@@ -116,6 +116,8 @@ unsigned char MAGN_ID = 0;
 const float mag_ellipsoid_center[3] = {79.8977, -113.117, -136.064};
 const float mag_ellipsoid_transform[3][3] = {{0.792428, -0.00418974, 0.00504922}, {-0.00418974, 0.841005, -0.0430735}, {0.00504922, -0.0430735, 0.988147}};
 
+
+
 //calibration_matrix[3][3] is the transformation matrix
 double mag_calibration_matrix[3][3] = {{M11, M12, M13},{M21, M22, M23},{M31, M32, M33} };
 //bias[3] is the bias

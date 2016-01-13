@@ -246,7 +246,7 @@ void module_all_run()
 				attitude_yaw_initial = pv_module_all_rpy[PV_IMU_YAW];
 			}
 	    #endif
-		/*----------------------Tratamento da Referencia---------------------*/
+		/*----------------------Tratamento do Radio---------------------*/
 		/* Realiza a leitura dos canais do radio-controle */
 		//	c_common_gpio_toggle(pv_module_all_LED5);
 		pv_module_all_InputData.receiverOutput.joystick[0]=c_rc_receiver_getChannel(C_RC_CHANNEL_THROTTLE);//+100;
@@ -255,41 +255,55 @@ void module_all_run()
 		pv_module_all_InputData.receiverOutput.joystick[3]=c_rc_receiver_getChannel(C_RC_CHANNEL_YAW);
 		pv_module_all_InputData.receiverOutput.aButton	 =c_rc_receiver_getChannel(C_RC_CHANNEL_A);
 		pv_module_all_InputData.receiverOutput.bButton    =c_rc_receiver_getChannel(C_RC_CHANNEL_B);
-		//c_common_gpio_toggle(pv_module_all_LED5);
-		//int aux=c_rc_receiver_getChannel(6);
-		//	if (pv_module_all_InputData.receiverOutput.joystick[0] < 0)
-		//			pv_module_all_InputData.receiverOutput.joystick[0] = 0;
-
-		/*Referencia de attitude*/
-
-		pv_module_all_InputData.attitude_reference.roll  = ((float)pv_module_all_InputData.receiverOutput.joystick[2]/100)*REF_ROLL_MAX;
-		pv_module_all_InputData.attitude_reference.pitch = ((float)pv_module_all_InputData.receiverOutput.joystick[1]/100)*REF_PITCH_MAX;
-		pv_module_all_InputData.attitude_reference.yaw   = attitude_yaw_initial;// + REF_YAW_MAX*channel_YAW/100;
-
-		/*Como o canal YAW da valores -100 ou 100 */
-		//	if (pv_module_all_InputData.receiverOutput.joystick[3]<0)/
-		//		pv_module_all_InputData.flightmode=0;
-		//	else{
-		//		pv_module_all_InputData.flightmode=1;
-		//		pv_module_all_InputData.position_refrence.refz = sonar_filtered;
-		//	}
-
-		//	/*Referencia de altitude*/
-		//	//Se o canal 3 esta ligado ele muda a referencia de altura se nao esta ligado fica na referencia pasada
-		//	// Trothel varia de -100 a 100 -> adiciono 100 para ficar 0-200 e divido para 200 para ficar 0->1
-		if (pv_module_all_InputData.receiverOutput.joystick[3]<0){
-			pv_module_all_InputData.flightmode=0;
-		}
-		else{
-			pv_module_all_InputData.flightmode=1;
-			pv_module_all_InputData.position_refrence.z=((float)(pv_module_all_InputData.receiverOutput.joystick[0]+100)/200)*1.5;
-		}
 
 		/*Como o canal B da valores 1 ou 100 */
 		if (pv_module_all_InputData.receiverOutput.bButton>50)
 			pv_module_all_InputData.enableintegration = true;
 		else
 			pv_module_all_InputData.enableintegration = false;
+
+		/*----------------------Seguranças-------------------------------------*/
+		// Se o yaw está perto da zona de perigo a emergencia é acionada e o birotor é desligado
+		if ( (pv_module_all_rpy[PV_IMU_YAW]*RAD_TO_DEG < -160) || (pv_module_all_rpy[PV_IMU_YAW]*RAD_TO_DEG > 160) )
+			pv_module_all_InputData.securityStop=1;
+
+		/*Para evita falso positivo foi implementada esta funçao*/
+		if (!pv_module_all_InputData.receiverOutput.aButton){
+			if(pv_module_all_aButton_ant==pv_module_all_InputData.receiverOutput.aButton){
+				pv_module_cont++;
+			}
+			if(pv_module_cont>=10){
+				pv_module_all_InputData.securityStop = 1;
+				pv_module_cont=0;
+			}
+			pv_module_all_aButton_ant=pv_module_all_InputData.receiverOutput.aButton;
+		}
+		else{
+			if (pv_module_all_InputData.receiverOutput.aButton){
+				pv_module_all_InputData.securityStop = 0;
+				pv_module_cont=0;
+				pv_module_all_aButton_ant=pv_module_all_InputData.receiverOutput.aButton;
+			}
+		}
+
+		/*-----------------------Referencia do sistema---------------------------*/
+		pv_module_all_InputData.position_refrence.x  = 0;
+		pv_module_all_InputData.position_refrence.y  = 0;
+		pv_module_all_InputData.position_refrence.z  = 0.5;
+		pv_module_all_InputData.position_refrence.dotX  = 0;
+		pv_module_all_InputData.position_refrence.dotY  = 0;
+		pv_module_all_InputData.position_refrence.dotZ  = 0;
+		pv_module_all_InputData.attitude_reference.roll  = 0.0000890176;
+		pv_module_all_InputData.attitude_reference.pitch = 0.0154833;
+		pv_module_all_InputData.attitude_reference.yaw   = 0;
+		pv_module_all_InputData.attitude_reference.dotRoll = 0;
+		pv_module_all_InputData.attitude_reference.dotPitch= 0;
+		pv_module_all_InputData.attitude_reference.dotYaw = 0;
+		pv_module_all_InputData.servosOutput.servo_refrence.alphar= -0.0154821;
+		pv_module_all_InputData.servosOutput.servo_refrence.alphal= -0.0153665;
+		pv_module_all_InputData.servosOutput.servo_refrence.dotAlphar =0;
+		pv_module_all_InputData.servosOutput.servo_refrence.dotAlphal =0;
+
 
 		#ifdef ENABLE_ALTURA
 			/*----------------------Tratamento do Sonar---------------------*/
@@ -329,7 +343,11 @@ void module_all_run()
 			dotZ_k_minus_1 = dotZ;
 
 			//Filtered measurements
+			pv_module_all_InputData.position.x = 0;
+			pv_module_all_InputData.position.y = 0;
 			pv_module_all_InputData.position.z = sonar_filtered;
+			pv_module_all_InputData.position.dotX = 0;
+			pv_module_all_InputData.position.dotY = 0;
 			pv_module_all_InputData.position.dotZ = dotZ;
 		#endif
 
@@ -359,29 +377,6 @@ void module_all_run()
 			pv_module_all_InputData.servosOutput.servo.dotAlphal=pv_module_all_servo_filtered.dotAlphal;
 			pv_module_all_InputData.servosOutput.servo.dotAlphar=pv_module_all_servo_filtered.dotAlphar;
 		#endif
-		/*----------------------Seguranças-------------------------------------*/
-		// Se o yaw está perto da zona de perigo a emergencia é acionada e o birotor é desligado
-		if ( (pv_module_all_rpy[PV_IMU_YAW]*RAD_TO_DEG < -160) || (pv_module_all_rpy[PV_IMU_YAW]*RAD_TO_DEG > 160) )
-			pv_module_all_InputData.securityStop=1;
-
-		/*Para evita falso positivo foi implementada esta funçao*/
-		if (!pv_module_all_InputData.receiverOutput.aButton){
-			if(pv_module_all_aButton_ant==pv_module_all_InputData.receiverOutput.aButton){
-				pv_module_cont++;
-			}
-			if(pv_module_cont>=10){
-				pv_module_all_InputData.securityStop = 1;
-				pv_module_cont=0;
-			}
-			pv_module_all_aButton_ant=pv_module_all_InputData.receiverOutput.aButton;
-		}
-		else{
-			if (pv_module_all_InputData.receiverOutput.aButton){
-				pv_module_all_InputData.securityStop = 0;
-				pv_module_cont=0;
-				pv_module_all_aButton_ant=pv_module_all_InputData.receiverOutput.aButton;
-			}
-		}
 
 
 		pv_module_all_com_aux[0]=pv_module_all_InputData.securityStop;
@@ -432,6 +427,7 @@ void module_all_run()
 		c_common_datapr_multwii2_sendControldatain(pv_module_all_com_rpy,pv_module_all_com_drpy,pv_module_all_com_position,pv_module_all_com_velocity);
 		c_common_datapr_multwii2_sendEscdata(pv_module_all_com_aux,pv_module_all_com_alpha,pv_module_all_com_dalpha);
 		c_common_datapr_multwii2_sendControldataout(pv_module_all_com_data1,pv_module_all_com_data3,pv_module_all_com_data2);
+	//	c_common_datapr_multwii_debug((float)pv_module_all_com_aux2[0],(float)pv_module_all_com_aux2[1],(float)pv_module_all_com_aux2[2],0);
 		c_common_datapr_multwii_debug((float)pv_module_all_com_aux2[0],(float)pv_module_all_com_aux2[1],(float)pv_module_all_com_aux2[2],0);
 	//	c_common_gpio_toggle(pv_module_all_LED5);
 		//c_common_datapr_multwii2_rcNormalize(channel);

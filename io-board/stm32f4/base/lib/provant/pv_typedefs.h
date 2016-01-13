@@ -97,6 +97,7 @@ typedef struct
   char  idRight;
   char  idLeft;
   pv_type_datapr_servos servo;
+  pv_type_datapr_servos servo_refrence;
   uint8_t status_errorRight;
   uint8_t status_errorLeft;
   uint8_t status_detaiRight;

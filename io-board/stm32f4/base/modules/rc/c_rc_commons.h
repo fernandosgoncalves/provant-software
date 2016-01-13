@@ -155,6 +155,8 @@
  #define STATE_DYAW			13
  #define STATE_DALPHA_R		14
  #define STATE_DALPHA_L		15
+ #define STATE_INT_Z		16
+ #define STATE_INT_YAW		17
 #endif
 
 

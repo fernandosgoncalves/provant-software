@@ -93,28 +93,28 @@
 
  	 // Accelerometer
   	 // "accel x,y,z (min/max) = X_MIN/X_MAX Y_MIN/Y_MAX Z_MIN/Z_MAX *1000"
-     #define ACCEL_X_MIN ((float) -0.996)
-	 #define ACCEL_X_MAX ((float)  1.097)
-	 #define ACCEL_Y_MIN ((float) -1.031)
-	 #define ACCEL_Y_MAX ((float)  1.070)
-	 #define ACCEL_Z_MIN ((float) -1.115)
-	 #define ACCEL_Z_MAX ((float)  0.914)
+     #define ACCEL_X_MIN ((float) -2.029)
+	 #define ACCEL_X_MAX ((float)  2.254)
+	 #define ACCEL_Y_MIN ((float) -2.037)
+	 #define ACCEL_Y_MAX ((float)  2.081)
+	 #define ACCEL_Z_MIN ((float) -2.199)
+	 #define ACCEL_Z_MAX ((float)  1.931)
 
   	 //Magnetometer parameters for calibration
   	 //see:http://diydrones.com/profiles/blogs/advanced-hard-and-soft-iron-magnetometer-calibration-for-dummies?id=705844%3ABlogPost%3A1676387&page=2#comments
-  	 #define M11 1.807
-  	 #define M12 -0.055
-  	 #define M13 0.052
-  	 #define M21 0.214
-  	 #define M22 1.926
-  	 #define M23 0.003
-  	 #define M31 0.02
-  	 #define M32 -0.048
-  	 #define M33 2.071
+  	 #define M11 2.147
+  	 #define M12 0.498
+  	 #define M13 0.303
+  	 #define M21 0.989
+  	 #define M22 1.835
+  	 #define M23 0.227
+  	 #define M31 -0.754
+  	 #define M32 0.349
+  	 #define M33 1.897
 
-  	 #define Bx -106.511
-  	 #define By -150.561
-  	 #define Bz -417.946
+  	 #define Bx 0.839
+  	 #define By -135.32
+  	 #define Bz -75.442
 #endif
 
 
