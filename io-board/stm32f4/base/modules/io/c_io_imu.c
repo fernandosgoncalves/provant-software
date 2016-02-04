@@ -120,10 +120,13 @@ const float mag_ellipsoid_transform[3][3] = {{0.792428, -0.00418974, 0.00504922}
 
 //calibration_matrix[3][3] is the transformation matrix
 double mag_calibration_matrix[3][3] = {{M11, M12, M13},{M21, M22, M23},{M31, M32, M33} };
+const float c_io_imu_mag_offset[]={15.5, -95.5, -38};
+const float c_io_imu_mag_scale[]={0.0047, 0.0033, 0.0041};
 //bias[3] is the bias
 double mag_bias[3] = {Bx,By,Bz};
 float acc_filtered[3]={0}, acc_filtered_k_minus_1[3]={0}, acc_filtered_k_minus_2[3]={0}, acc_raw_k_minus_1[3]={0}, acc_raw_k_minus_2[3]={0};
 float mag_filtered[3]={0}, mag_filtered_k_minus_1[3]={0}, mag_filtered_k_minus_2[3]={0}, mag_raw_k_minus_1[3]={0}, mag_raw_k_minus_2[3]={0};
+float magLastRaw[3]={0};
 /* Private function prototypes -----------------------------------------------*/
 float abs2(float num);
 void c_io_imu_calibrate();
@@ -445,11 +448,11 @@ float mag_tmp[3]={0};
         /** A sensitividade do giroscopio é dada pela tabela (extraída do datasheet):
          FS_SEL | Full Scale Range | LSB Sensitivity
         --------|------------------|----------------
-            0   |    ± 250 °/s     |  131 LSB/°/s
-            1   |    ± 500 °/s     |  65.5 LSB/°/s
-            2   |    ± 1000 °/s    |  32.8 LSB/°/s
-            3   |    ± 2000 °/s    |  16.4 LSB/°/s <- setado no c_io_imu_MPU6050_int
-        ***********************************************/
+     		0   | +/- 250 degrees/s  | 131 LSB/deg/s  |  10,000 = 76.33 deg/s  |  1 LSB = 0.007633 deg/sec
+       		1   | +/- 500 degrees/s  | 65.5 LSB/deg/s |  10,000 = 152.7 deg/s  |  1 LSB = 0.01527 deg/sec
+       		2   | +/- 1000 degrees/s | 32.8 LSB/deg/s |  10,000 = 304.9 deg/s  |  1 LSB = 0.03049 deg/sec
+       		3   | +/- 2000 degrees/s | 16.4 LSB/deg/s |  10,000 = 609.7 deg/s  |  1 LSB = 0.06097 deg/sec <- setado no c_io_imu_MPU6050_int
+ 	 	 ***********************************************/
 
         float gyrScale =16.4f;
         gyrScale = 0.0174532925f/gyrScale;//0.0174532925 = PI/180
@@ -505,8 +508,17 @@ float mag_tmp[3]={0};
         			for (int j=0; j<3; ++j)
         				result[i] += mag_calibration_matrix[i][j] * magRaw[j];
 
-        		//calibrated values
+//        		calibrated values
         		for (int i=0; i<3; i++) magRaw[i] = result[i];
+
+//        		for (int i = 0; i < 3; ++i)
+//        		{
+//        		  magRaw[i]=(mag_filtered[i]-c_io_imu_mag_offset[i])*c_io_imu_mag_scale[i];
+//        		  if(abs(magRaw[i])>1)
+//        		    magRaw[i] = magLastRaw[i];
+//        		  else
+//        		    magLastRaw[i] =magRaw[i];
+//        		}
 
     		#else
         		for (int i=0; i<3; ++i)

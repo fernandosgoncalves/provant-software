@@ -56,3 +56,30 @@ float last_inertial_acc_z=0;
 	 estimated_height=new_initial_height;
  }
 
+ void c_datapr_filter_complementary(float *rpy, float c_datapr_filter_complementary_raw_acc[3], float c_datapr_filter_complementary_raw_gyr[3], float c_datapr_filter_complementary_mag[3], long sample_time_gyro_us){
+	 float sample_time_gyro;
+
+	 //Transform the sample time in us to s
+	 sample_time_gyro = (float)(sample_time_gyro_us)*1E-6;
+
+	 float norm=sqrt(c_datapr_filter_complementary_mag[0]*c_datapr_filter_complementary_mag[0]+c_datapr_filter_complementary_mag[1]+c_datapr_filter_complementary_mag[1]+c_datapr_filter_complementary_mag[2]+c_datapr_filter_complementary_mag[2]);
+	 for (int i=0;i<3;i++)
+		 c_datapr_filter_complementary_mag[i]/=norm;
+
+	 float pitch = atan2(c_datapr_filter_complementary_raw_acc[0],sqrt(pow(c_datapr_filter_complementary_raw_acc[1],2)+pow(c_datapr_filter_complementary_raw_acc[2],2)));
+	 float roll = atan2(-c_datapr_filter_complementary_raw_acc[1],-c_datapr_filter_complementary_raw_acc[2]);
+	 float yaw = atan2((-c_datapr_filter_complementary_mag[1]*cos(roll)+c_datapr_filter_complementary_mag[2]*sin(roll)),(c_datapr_filter_complementary_mag[0]*cos(pitch)+c_datapr_filter_complementary_mag[1]*sin(pitch)*sin(roll)+c_datapr_filter_complementary_mag[2]*sin(pitch)*cos(roll)));
+
+	 //roll*=57.2957795131f;
+	 //pitch*=57.2957795131f;
+	 //yaw*=57.2957795131f;
+
+	 float pitch2=0.6*(pitch2+c_datapr_filter_complementary_raw_gyr[0]* sample_time_gyro)+0.4*pitch;
+	 float roll2=0.6*(roll2+c_datapr_filter_complementary_raw_gyr[1]* sample_time_gyro)+0.4*roll;
+	 float yaw2=0.6*(yaw2+c_datapr_filter_complementary_raw_gyr[2]* sample_time_gyro)+0.4*yaw;
+
+	 rpy[0]=roll;
+	 rpy[1]=pitch;
+	 rpy[2]=yaw;
+ }
+

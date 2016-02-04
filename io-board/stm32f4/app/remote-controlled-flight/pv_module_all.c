@@ -74,6 +74,9 @@ void module_all_init()
 	/* Inicia a comunicaçao*/
 	  c_common_usart2_init(USART_BAUDRATE);
 
+	/*Inicializa o controlador*/
+	  c_rc_LQR2_control_init();
+
 	/* Pin for debug */
 	//debugPin = c_common_gpio_init(GPIOE, GPIO_Pin_13, GPIO_Mode_OUT);
 
@@ -101,7 +104,7 @@ void module_all_run()
 
 	/*Dadosa usados para Calibrar IMU*/
 	float  attitude_yaw_initial=0.0f, attitude_pitch_initial=0.0f,attitude_roll_initial=0.0f;
-	float  yaw_aux;
+	float  yaw_aux, pitch_aux, roll_aux;
 
 	/*Dados gerais*/
 	int iterations=1, channel_flight_mode=0;
@@ -116,12 +119,15 @@ void module_all_run()
 	float sonar_raw_k_minus_1=0.0f, sonar_raw_k_minus_2=0.0f, sonar_filtered_k_minus_1=0.0f, sonar_filtered_k_minus_2=0.0f;
 	float dotZ_filtered_k_minus_1=0.0f, dotZ_k_minus_1=0.0f;
 	float last_reference_z=0;
-	int valid_sonar_measurements=0;
+	int valid_sonar_measurements=0, sample=0;
 	float sonar_raw=0.0f, sonar_raw_real=0.0f, sonar_raw_filter=0.0f, sonar_corrected_debug=0.0f, sonar_corrected=0.0f, sonar_filtered=0.0f, dotZ=0.0f, dotZ_filtered=0.0f;
 	float servo_filter_right=0, servo_filter_left=0;
 
+
 	/*Dados usados nos servos*/
 	pv_type_datapr_servos pv_module_all_servo_real;
+	pv_type_datapr_servos pv_module_all_servo_actual;
+	pv_type_datapr_servos pv_module_all_servo_last;
 	pv_type_datapr_servos pv_module_all_servo_filtered;
 	float servo_r_raw_k_minus_1=0.0f, servo_r_raw_k_minus_2=0.0f, servo_r_filtered_k_minus_1=0.0f, servo_r_filtered_k_minus_2=0.0f;
 	float servo_l_raw_k_minus_1=0.0f, servo_l_raw_k_minus_2=0.0f, servo_l_filtered_k_minus_1=0.0f, servo_l_filtered_k_minus_2=0.0f;
@@ -155,6 +161,11 @@ void module_all_run()
 	pv_module_all_servo_filtered.alphar=0;
 	pv_module_all_servo_filtered.dotAlphal=0;
 	pv_module_all_servo_filtered.dotAlphar=0;
+
+	pv_module_all_servo_last.alphal=0;
+	pv_module_all_servo_last.alphar=0;
+	pv_module_all_servo_last.dotAlphal=0;
+	pv_module_all_servo_last.dotAlphar=0;
 
 	/* Inicializa os dados da attitude*/
 	pv_module_all_InputData.attitude.roll  = 0;
@@ -212,32 +223,34 @@ void module_all_run()
 	    #ifdef ENABLE_IMU
 			/*----------------------Tratamento da IMU---------------------*/
 			/* Pega e trata os valores da imu */
-	    //	c_common_gpio_toggle(pv_module_all_LED5);
+
 	    	USART2->CR1 &= 0xFFFFFFDF;
 	    	c_io_imu_getRaw(pv_module_all_InputData.imuOutput.accRaw, pv_module_all_InputData.imuOutput.gyrRaw, pv_module_all_InputData.imuOutput.magRaw,sample_time_gyro_us);
 	    	USART2->CR1 |= 0x00000020;
 	    	c_datapr_MahonyAHRSupdate(pv_module_all_attitude_quaternion,pv_module_all_InputData.imuOutput.gyrRaw[0],pv_module_all_InputData.imuOutput.gyrRaw[1],pv_module_all_InputData.imuOutput.gyrRaw[2],pv_module_all_InputData.imuOutput.accRaw[0],pv_module_all_InputData.imuOutput.accRaw[1],pv_module_all_InputData.imuOutput.accRaw[2],pv_module_all_InputData.imuOutput.magRaw[0],pv_module_all_InputData.imuOutput.magRaw[1],pv_module_all_InputData.imuOutput.magRaw[2],sample_time_gyro_us[0]);
-			c_io_imu_Quaternion2Euler(pv_module_all_attitude_quaternion, pv_module_all_rpy);
+	    	c_io_imu_Quaternion2Euler(pv_module_all_attitude_quaternion, pv_module_all_rpy);
+//			c_datapr_filter_complementary(pv_module_all_rpy,pv_module_all_InputData.imuOutput.accRaw, pv_module_all_InputData.imuOutput.gyrRaw, pv_module_all_InputData.imuOutput.magRaw,sample_time_gyro_us[0]);
 			c_io_imu_EulerMatrix(pv_module_all_rpy,pv_module_all_InputData.imuOutput.gyrRaw);
-//			c_common_gpio_toggle(pv_module_all_LED5);
 
 			pv_module_all_InputData.imuOutput.sampleTime =sample_time_gyro_us[0];
 
 			/* Saida dos dados de posição limitada a uma variaçao minima */
 			if (abs2(pv_module_all_rpy[PV_IMU_ROLL]-pv_module_all_InputData.attitude.roll)>ATTITUDE_MINIMUM_STEP)
-				pv_module_all_InputData.attitude.roll= pv_module_all_rpy[PV_IMU_ROLL];
+				roll_aux= pv_module_all_rpy[PV_IMU_ROLL];
 			if (abs2(pv_module_all_rpy[PV_IMU_PITCH]-pv_module_all_InputData.attitude.pitch)>ATTITUDE_MINIMUM_STEP)
-				pv_module_all_InputData.attitude.pitch= pv_module_all_rpy[PV_IMU_PITCH];
+				pitch_aux= pv_module_all_rpy[PV_IMU_PITCH];
 			if (abs2(pv_module_all_rpy[PV_IMU_YAW]-yaw_aux)>ATTITUDE_MINIMUM_STEP){
 				yaw_aux= pv_module_all_rpy[PV_IMU_YAW];
 			}
 
-			pv_module_all_InputData.attitude.yaw=yaw_aux-attitude_yaw_initial;
+			pv_module_all_InputData.attitude.roll=0.0000890176;//roll_aux;
+			pv_module_all_InputData.attitude.pitch=pitch_aux-attitude_pitch_initial;
+			pv_module_all_InputData.attitude.yaw=0;//yaw_aux-attitude_yaw_initial;
 
 			/* Saida dos dados da velocidade angular*/
-			pv_module_all_InputData.attitude.dotRoll  = pv_module_all_rpy[PV_IMU_DROLL];
+			pv_module_all_InputData.attitude.dotRoll  = 0;//pv_module_all_rpy[PV_IMU_DROLL];
 			pv_module_all_InputData.attitude.dotPitch = pv_module_all_rpy[PV_IMU_DPITCH];
-			pv_module_all_InputData.attitude.dotYaw   = pv_module_all_rpy[PV_IMU_DYAW ];
+			pv_module_all_InputData.attitude.dotYaw   = 0;//pv_module_all_rpy[PV_IMU_DYAW ];
 
 			// A referencia é a orientacao que o UAV é iniciado
 			if (pv_module_all_InputData.init){
@@ -253,8 +266,8 @@ void module_all_run()
 		pv_module_all_InputData.receiverOutput.joystick[1]=c_rc_receiver_getChannel(C_RC_CHANNEL_PITCH);
 		pv_module_all_InputData.receiverOutput.joystick[2]=c_rc_receiver_getChannel(C_RC_CHANNEL_ROLL);
 		pv_module_all_InputData.receiverOutput.joystick[3]=c_rc_receiver_getChannel(C_RC_CHANNEL_YAW);
-		pv_module_all_InputData.receiverOutput.aButton	 =c_rc_receiver_getChannel(C_RC_CHANNEL_A);
-		pv_module_all_InputData.receiverOutput.bButton    =c_rc_receiver_getChannel(C_RC_CHANNEL_B);
+		pv_module_all_InputData.receiverOutput.aButton = (int)c_rc_receiver_getChannel(C_RC_CHANNEL_A);
+		pv_module_all_InputData.receiverOutput.bButton = (int)c_rc_receiver_getChannel(C_RC_CHANNEL_B);
 
 		/*Como o canal B da valores 1 ou 100 */
 		if (pv_module_all_InputData.receiverOutput.bButton>50)
@@ -263,10 +276,6 @@ void module_all_run()
 			pv_module_all_InputData.enableintegration = false;
 
 		/*----------------------Seguranças-------------------------------------*/
-		// Se o yaw está perto da zona de perigo a emergencia é acionada e o birotor é desligado
-		if ( (pv_module_all_rpy[PV_IMU_YAW]*RAD_TO_DEG < -160) || (pv_module_all_rpy[PV_IMU_YAW]*RAD_TO_DEG > 160) )
-			pv_module_all_InputData.securityStop=1;
-
 		/*Para evita falso positivo foi implementada esta funçao*/
 		if (!pv_module_all_InputData.receiverOutput.aButton){
 			if(pv_module_all_aButton_ant==pv_module_all_InputData.receiverOutput.aButton){
@@ -286,15 +295,27 @@ void module_all_run()
 			}
 		}
 
+		// Se o yaw está perto da zona de perigo a emergencia é acionada e o birotor é desligado
+		if ( (pv_module_all_rpy[PV_IMU_YAW]*RAD_TO_DEG < -140.0) || (pv_module_all_rpy[PV_IMU_YAW]*RAD_TO_DEG > 140.0))
+			pv_module_all_InputData.securityStop=1;
+
+		if ( (pv_module_all_rpy[PV_IMU_ROLL]*RAD_TO_DEG < -90.0) || (pv_module_all_rpy[PV_IMU_ROLL]*RAD_TO_DEG > 90.0))
+			pv_module_all_InputData.securityStop=1;
+
+		if ( (pv_module_all_rpy[PV_IMU_PITCH]*RAD_TO_DEG < -90.0) || (pv_module_all_rpy[PV_IMU_PITCH]*RAD_TO_DEG > 90.0))
+			pv_module_all_InputData.securityStop=1;
+
+
+
 		/*-----------------------Referencia do sistema---------------------------*/
 		pv_module_all_InputData.position_refrence.x  = 0;
 		pv_module_all_InputData.position_refrence.y  = 0;
-		pv_module_all_InputData.position_refrence.z  = 0.5;
+		pv_module_all_InputData.position_refrence.z  = 1;
 		pv_module_all_InputData.position_refrence.dotX  = 0;
 		pv_module_all_InputData.position_refrence.dotY  = 0;
 		pv_module_all_InputData.position_refrence.dotZ  = 0;
-		pv_module_all_InputData.attitude_reference.roll  = 0.0000890176;
-		pv_module_all_InputData.attitude_reference.pitch = 0.0154833;
+		pv_module_all_InputData.attitude_reference.roll  = 0.0000890176;//+(REF_ROLL_MAX*pv_module_all_InputData.receiverOutput.joystick[2]/100);
+		pv_module_all_InputData.attitude_reference.pitch = 0.0154833;//+(REF_PITCH_MAX*pv_module_all_InputData.receiverOutput.joystick[1]/100);
 		pv_module_all_InputData.attitude_reference.yaw   = 0;
 		pv_module_all_InputData.attitude_reference.dotRoll = 0;
 		pv_module_all_InputData.attitude_reference.dotPitch= 0;
@@ -313,7 +334,27 @@ void module_all_run()
 			sonar_raw= sonar_raw_real/100;
 //			c_common_gpio_toggle(pv_module_all_LED5);
 
-			sonar_corrected = (sonar_raw)*cos(pv_module_all_InputData.attitude.roll)*cos(pv_module_all_InputData.attitude.pitch);
+			#ifdef LIMIT_SONAR_VAR
+			// corrects the measurement of sonar
+			if ( ( (last_valid_sonar_raw-SONAR_MAX_VAR)<sonar_raw && (last_valid_sonar_raw+SONAR_MAX_VAR)>sonar_raw ))
+				last_valid_sonar_raw = sonar_raw;
+			else
+				sonar_raw = last_valid_sonar_raw;
+			#endif
+
+			#ifdef FILTER_SONAR_100ms
+			//Measurement of sonar with the average of 20 samples
+			if (sample<=20){
+				sonar_raw_filter=sonar_raw_filter+sonar_raw;
+				sample++;
+			}else{
+				sonar_corrected_debug= sonar_raw_filter/20;
+				sonar_corrected = (sonar_corrected_debug)*cos(pv_module_all_InputData.attitude.roll)*cos(pv_module_all_InputData.attitude.pitch);//the altitude must be in meters
+				sample=0;
+				sonar_raw_filter=0;
+			}
+			#endif
+
 
 			/*Filtrajem das amostras do sonar*/
 			#ifdef SONAR_FILTER_1_ORDER_10HZ
@@ -345,19 +386,18 @@ void module_all_run()
 			//Filtered measurements
 			pv_module_all_InputData.position.x = 0;
 			pv_module_all_InputData.position.y = 0;
-			pv_module_all_InputData.position.z = sonar_filtered;
+			pv_module_all_InputData.position.z = 1;//sonar_filtered;
 			pv_module_all_InputData.position.dotX = 0;
 			pv_module_all_InputData.position.dotY = 0;
-			pv_module_all_InputData.position.dotZ = dotZ;
+			pv_module_all_InputData.position.dotZ = 0;//dotZ;
 		#endif
 
 		#ifdef ENABLE_SERVO_READ
 			/*----------------------Tratamento dos servos---------------------*/
 			//Leitura da posicao e velocidade atual dos servo motores
 			if (!pv_module_all_InputData.init){
-	//			c_common_gpio_toggle(pv_module_all_LED5);
 				pv_module_all_servo_real=c_io_servos_read();
-	//			c_common_gpio_toggle(pv_module_all_LED5);
+
 				/*Left servo filter*/
 				//1st order filter with fc=10Hz
 				pv_module_all_servo_filtered.dotAlphal = k1_1o_10Hz*servo_l_filtered_k_minus_1 + k2_1o_10Hz*pv_module_all_servo_real.dotAlphal + k3_1o_10Hz*servo_l_raw_k_minus_1;
@@ -376,6 +416,7 @@ void module_all_run()
 			pv_module_all_InputData.servosOutput.servo.alphar=pv_module_all_servo_real.alphar;
 			pv_module_all_InputData.servosOutput.servo.dotAlphal=pv_module_all_servo_filtered.dotAlphal;
 			pv_module_all_InputData.servosOutput.servo.dotAlphar=pv_module_all_servo_filtered.dotAlphar;
+
 		#endif
 
 
@@ -394,12 +435,12 @@ void module_all_run()
 		pv_module_all_com_drpy[1]=pv_module_all_InputData.attitude.dotPitch;
 		pv_module_all_com_drpy[2]=pv_module_all_InputData.attitude.dotYaw;
 
-		pv_module_all_com_position[0]=0;//pv_module_all_InputData.position.x;
-		pv_module_all_com_position[1]=0;//pv_module_all_InputData.position.y;
+		pv_module_all_com_position[0]=pv_module_all_InputData.position.x;
+		pv_module_all_com_position[1]=pv_module_all_InputData.position.y;
 		pv_module_all_com_position[2]=pv_module_all_InputData.position.z;
 
-		pv_module_all_com_velocity[0]=0;//pv_module_all_InputData.position.dotX;
-		pv_module_all_com_velocity[1]=0;//pv_module_all_InputData.position.dotY;
+		pv_module_all_com_velocity[0]=pv_module_all_InputData.position.dotX;
+		pv_module_all_com_velocity[1]=pv_module_all_InputData.position.dotY;
 		pv_module_all_com_velocity[2]=pv_module_all_InputData.position.dotZ;
 
 		pv_module_all_com_alpha[0]=pv_module_all_InputData.servosOutput.servo.alphal;
@@ -423,43 +464,38 @@ void module_all_run()
 		pv_module_all_com_data2[0]= pv_module_all_ControlData.actuation.escRightNewtons;
 		pv_module_all_com_data2[1]= pv_module_all_ControlData.actuation.escRightSpeed;
 
-	//	c_common_gpio_toggle(pv_module_all_LED5);
+
+		//c_common_datapr_multwii_attitude(pv_module_all_InputData.attitude.roll*RAD_TO_DEG,pv_module_all_InputData.attitude.pitch*RAD_TO_DEG,pv_module_all_InputData.attitude.yaw*RAD_TO_DEG);
 		c_common_datapr_multwii2_sendControldatain(pv_module_all_com_rpy,pv_module_all_com_drpy,pv_module_all_com_position,pv_module_all_com_velocity);
 		c_common_datapr_multwii2_sendEscdata(pv_module_all_com_aux,pv_module_all_com_alpha,pv_module_all_com_dalpha);
 		c_common_datapr_multwii2_sendControldataout(pv_module_all_com_data1,pv_module_all_com_data3,pv_module_all_com_data2);
 	//	c_common_datapr_multwii_debug((float)pv_module_all_com_aux2[0],(float)pv_module_all_com_aux2[1],(float)pv_module_all_com_aux2[2],0);
-		c_common_datapr_multwii_debug((float)pv_module_all_com_aux2[0],(float)pv_module_all_com_aux2[1],(float)pv_module_all_com_aux2[2],0);
-	//	c_common_gpio_toggle(pv_module_all_LED5);
-		//c_common_datapr_multwii2_rcNormalize(channel);
-	//	c_common_gpio_toggle(pv_module_all_LED5);
+	//	c_common_datapr_multwii_debug((float)pv_module_all_com_aux2[0],(float)pv_module_all_com_aux2[1],(float)pv_module_all_com_aux2[2],0);
+
 		c_common_datapr_multwii_sendstack(USART2);
 
-	//	c_common_gpio_toggle(pv_module_all_LED5);
 
 		/*Receives control input data from the beaglebone*/
-	//	c_common_gpio_toggle(pv_module_all_LED5);
-	//	taskENTER_CRITICAL();
-		flag=c_common_datapr_multiwii_receivestack(USART2);
+
+
 		if (flag==-2){
 			c_common_gpio_toggle(pv_module_all_LED5);
 		}
-	//	taskEXIT_CRITICAL();
-	//	c_common_gpio_toggle(pv_module_all_LED5);
-
-//		c_common_gpio_toggle(pv_module_all_LED5);
+#ifdef	CONTROL_BEAGLE
+		flag=c_common_datapr_multiwii_receivestack(USART2);
 		pv_module_all_actuation=c_common_datapr_multwii_getactuation();
-//		c_common_gpio_toggle(pv_module_all_LED5);
+#else
+		pv_module_all_actuation=c_rc_LQR2_controller(pv_module_all_InputData.attitude,pv_module_all_InputData.attitude_reference,
+													 pv_module_all_InputData.position,pv_module_all_InputData.position_refrence,
+													 pv_module_all_InputData.servosOutput.servo, pv_module_all_InputData.servosOutput.servo_refrence,
+													 0.012,pv_module_all_InputData.securityStop);
+#endif
 		if(pv_module_all_actuation.escLeftNewtons!=0 || pv_module_all_actuation.escRightNewtons!=0 || pv_module_all_actuation.servoLeft!=0 || pv_module_all_actuation.servoRight!=0){
 			pv_module_all_auxactuation=pv_module_all_actuation;
 		}
 
-		if(pv_module_all_auxactuation.servoLeft<=2 && pv_module_all_auxactuation.servoLeft>=-2)
-			pv_module_all_ControlData.actuation.servoLeft=pv_module_all_auxactuation.servoLeft;
-		if(pv_module_all_auxactuation.servoRight<=2 && pv_module_all_auxactuation.servoRight>=-2)
-			pv_module_all_ControlData.actuation.servoRight=pv_module_all_auxactuation.servoRight;
+		pv_module_all_ControlData.actuation=pv_module_all_auxactuation;
 
-		pv_module_all_ControlData.actuation.escRightNewtons=pv_module_all_auxactuation.escRightNewtons;
-		pv_module_all_ControlData.actuation.escLeftNewtons=pv_module_all_auxactuation.escLeftNewtons;
 
 		if (pv_module_all_InputData.securityStop){
 			pv_module_all_ControlData.actuation.servoLeft=0;
@@ -480,13 +516,11 @@ void module_all_run()
 				// inicializacao
 				if (pv_module_all_InputData.init){
 					c_io_servos_writePosition(0,0);
-					//c_io_servos_writeTorque(0,0);
 				}
 				else{
 					//c_io_servos_writePosition(iActuation.servoRight,iActuation.servoLeft);
-			//		c_common_gpio_toggle(pv_module_all_LED5);
-					c_io_servos_writeTorque(pv_module_all_ControlData.actuation.servoRight,pv_module_all_ControlData.actuation.servoLeft);
-			//		c_common_gpio_toggle(pv_module_all_LED5);
+				    c_io_servos_writeTorque(pv_module_all_ControlData.actuation.servoRight,pv_module_all_ControlData.actuation.servoLeft);
+
 				}
 			}
 		#endif
@@ -495,10 +529,9 @@ void module_all_run()
 			/* Escrita dos esc */
 			unsigned char sp_right;
 			unsigned char sp_left;
-	//		c_common_gpio_toggle(pv_module_all_LED5);
+
 			sp_right = pv_module_all_setPointESC_Forca(pv_module_all_ControlData.actuation.escRightNewtons);
 			sp_left = pv_module_all_setPointESC_Forca(pv_module_all_ControlData.actuation.escLeftNewtons );
-	//		c_common_gpio_toggle(pv_module_all_LED5);
 
 			if (pv_module_all_InputData.securityStop){
 				c_io_blctrl_setSpeed(1, 0 );//sp_right

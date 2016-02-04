@@ -87,34 +87,34 @@
 
 #endif
 #ifdef C_IO_IMU_USE_GY_87
-	#define OFFSET_GYRO_X		    -0.0261683229863
-	#define OFFSET_GYRO_Y		    -0.0001869642579
-	#define OFFSET_GYRO_Z			-0.0000596364945
+	#define OFFSET_GYRO_X		    -0.038
+	#define OFFSET_GYRO_Y		    0
+	#define OFFSET_GYRO_Z			-0.0045
 
- 	 // Accelerometer
+   	// Accelerometer
   	 // "accel x,y,z (min/max) = X_MIN/X_MAX Y_MIN/Y_MAX Z_MIN/Z_MAX *1000"
-     #define ACCEL_X_MIN ((float) -2.029)
+	 #define ACCEL_X_MIN ((float)  -2.029)
 	 #define ACCEL_X_MAX ((float)  2.254)
-	 #define ACCEL_Y_MIN ((float) -2.037)
+	 #define ACCEL_Y_MIN ((float)  -2.037)
 	 #define ACCEL_Y_MAX ((float)  2.081)
-	 #define ACCEL_Z_MIN ((float) -2.199)
+	 #define ACCEL_Z_MIN ((float)  -2.199)
 	 #define ACCEL_Z_MAX ((float)  1.931)
 
-  	 //Magnetometer parameters for calibration
+	 //Magnetometer parameters for calibration
   	 //see:http://diydrones.com/profiles/blogs/advanced-hard-and-soft-iron-magnetometer-calibration-for-dummies?id=705844%3ABlogPost%3A1676387&page=2#comments
-  	 #define M11 2.147
-  	 #define M12 0.498
-  	 #define M13 0.303
-  	 #define M21 0.989
-  	 #define M22 1.835
-  	 #define M23 0.227
-  	 #define M31 -0.754
-  	 #define M32 0.349
-  	 #define M33 1.897
+	 #define M11 2.131
+  	 #define M12 0.522
+  	 #define M13 0.272
+  	 #define M21 0.903
+  	 #define M22 1.832
+  	 #define M23 0.237
+  	 #define M31 -0.72
+  	 #define M32 0.37
+  	 #define M33 1.809
 
-  	 #define Bx 0.839
-  	 #define By -135.32
-  	 #define Bz -75.442
+  	 #define Bx -2.265
+  	 #define By -140.372
+  	 #define Bz -75.823
 #endif
 
 

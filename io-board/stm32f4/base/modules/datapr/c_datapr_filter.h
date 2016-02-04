@@ -17,6 +17,7 @@
 #include "c_rc_commons.h"
 
 
+
 #ifdef __cplusplus
  extern "C" {
 #endif
@@ -31,6 +32,7 @@
  // Integrate the accelerometer data two times to obtain the estimated height
  float c_datapr_filter_estimate_height_acc(float *raw_acc, float *attitude);
  void reset_height_estimation(float new_initial_height, float new_initial_velocity_z);
+ void c_datapr_filter_complementary(float *rpy, float c_datapr_filter_complementary_raw_acc[3], float c_datapr_filter_complementary_raw_gyr[3], float c_datapr_filter_complementary_mag[3], long sample_time_gyro_u);
 
 #ifdef __cplusplus
 }

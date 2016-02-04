@@ -70,6 +70,7 @@
 #define SONAR_MAX_VAR		0.5
 #define SONAR_AVERAGE_WINDOW 20
 
+//#define CONTROL_BEAGLE
 
 //Maximum value for the thrust when in manual height mode
 #define THRUST_ROTOR_MAX			14.2f   // Newtons. It is the maximum thrust that can be appliesd to a rotor

@@ -26,9 +26,9 @@
 /* Exported constants --------------------------------------------------------*/
 
 /* Exported macro ------------------------------------------------------------*/
-
+//#define LQR_INTEGRATOR
 /* Exported functions ------------------------------------------------------- */
-void c_rc_LQR_control_init();
+ void c_rc_LQR2_control_init();
 
 //LQR attitude and height(AH) controller. Height control depends on global variable manual_height_control.
 pv_type_actuation c_rc_LQR2_controller(pv_type_datapr_attitude attitude,
@@ -37,7 +37,7 @@ pv_type_actuation c_rc_LQR2_controller(pv_type_datapr_attitude attitude,
 				  pv_type_datapr_position position_reference,
 				  pv_type_datapr_servos servo,
 				  pv_type_datapr_servos servo_reference,
-				  float sample_time);
+				  float sample_time, bool stop);
 
 #ifdef __cplusplus
 }
