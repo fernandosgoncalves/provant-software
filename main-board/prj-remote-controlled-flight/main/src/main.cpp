@@ -16,10 +16,9 @@
 #include "DataProcessingManager.h"
 #include "ContinuousControlManager.h"
 #include "CommLowLevelManager.h"
-//#include "ModuleManager.h"
 
 // STL
-#include <iostream>
+//#include <iostream>
 
 // Boost
 #include <boost/thread/thread.hpp>
@@ -32,8 +31,6 @@ public:
     mainManager() {}
     ~mainManager() {}
 
-    //ModuleManager* mm;
-    //DataProcessingManager* dm;
 };
 //static boost::asio::io_service io;
 int main(int argc, char ** argv) {
@@ -41,18 +38,18 @@ int main(int argc, char ** argv) {
 	pthread_t threadID;
 	struct sched_param param;
 
-    DataProcessingManager DataProcessing("DataProcessing:Manager");
-    ContinuousControlManager   ContinuousControl("ContinuousControl:Manager");  //AQUI
-    CommLowLevelManager        CommLowLevel("CommLowLevel:Manager");  //AQUI
+    DataProcessingManager DataProcessing("DataProcessing:Manager"); //Thread de processamento de dados
+    ContinuousControlManager   ContinuousControl("ContinuousControl:Manager");  //Thread de controle
+    CommLowLevelManager        CommLowLevel("CommLowLevel:Manager");  //Thread de comunicacao com low level
 
-
-    CommLowLevel.interface->q_atitude_out_ = &ContinuousControl.interface->q_atitude_in; //Aqui
-    CommLowLevel.interface->q_position_out_ = &ContinuousControl.interface->q_position_in; //Aqui
-    CommLowLevel.interface->q_servos_out_ = &ContinuousControl.interface->q_servos_in; //Aqui
-    CommLowLevel.interface->q_debug_out_= &ContinuousControl.interface->q_debug_in; //Aqui
-    CommLowLevel.interface->q_rc_out_= &ContinuousControl.interface->q_rc_in; //Aqui
-    CommLowLevel.interface->q_status_out_= &ContinuousControl.interface->q_status_in; //Aqui
-    ContinuousControl.interface->q_actuation_out_ = &CommLowLevel.interface->q_actuation_in; //Aqui
+    //Definição das interfaces, atribuição do envio das mensagens
+    CommLowLevel.interface->q_atitude_out_ = &ContinuousControl.interface->q_atitude_in; //Atitude enviada do Low Level para o controle
+    CommLowLevel.interface->q_position_out_ = &ContinuousControl.interface->q_position_in; //Posição enviada do Low Level para o controle
+    CommLowLevel.interface->q_servos_out_ = &ContinuousControl.interface->q_servos_in; //Posição dos servos enviada do Low Level para o controle
+    CommLowLevel.interface->q_debug_out_= &ContinuousControl.interface->q_debug_in; //Mensagens de debug
+    CommLowLevel.interface->q_rc_out_= &ContinuousControl.interface->q_rc_in; //Dados do radio controle
+    CommLowLevel.interface->q_status_out_= &ContinuousControl.interface->q_status_in; //
+    ContinuousControl.interface->q_actuation_out_ = &CommLowLevel.interface->q_actuation_in; //Dados de atuação enviados para o Low Level
 
     CommLowLevel.interface->q_atitude2_out_ = &DataProcessing.interface->q_atitude_in; //Aqui
     CommLowLevel.interface->q_position2_out_ = &DataProcessing.interface->q_position_in; //Aqui
@@ -61,10 +58,6 @@ int main(int argc, char ** argv) {
     CommLowLevel.interface->q_rc2_out_= &DataProcessing.interface->q_rc_in; //Aqui
     CommLowLevel.interface->q_actuation2_out_ = &DataProcessing.interface->q_actuation_in; //Aqui
     CommLowLevel.interface->q_status2_out_= &ContinuousControl.interface->q_status_in; //Aqui
-
-//    boost::asio::deadline_timer periodo(io,boost::posix_time::milliseconds(12));
-//
-//    ContinuousControlManager::Run.async_wait
 
     boost::thread th1( boost::bind( &CommLowLevelManager::Run, CommLowLevel)); //AQUI
 

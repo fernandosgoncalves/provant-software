@@ -59,28 +59,28 @@ void DataProcessingManager::Run()
 {
     Init();
 
-    // Algumas variaveis...
-    proVant::atitude atitude;
-    proVant::position position;
-    proVant::servos_state servos;
     proVant::controlOutput actuation;
-    proVant::debug debug;
+    proVant::servos_state servos;
+    proVant::position position;
+    proVant::atitude atitude;
     proVant::rcNormalize rc;
+    proVant::debug debug;
 
-    float rpy[3]={};
-    float drpy[3]={};
+    float servoTorque[2]={};
     float trajectory[3]={};
     float velocity[3]={};
-    float alpha[2]={};
-    float dalpha[2]={};
-    int aux[2]={};
-    float aux2[3]={};
-    float servoTorque[2]={};
     float escForce[2]={};
+    float dalpha[2]={};
     float debugv[4]={};
-    int16_t normChannels[7]={};
+    float alpha[2]={};
+    float drpy[3]={};
+    float aux2[3]={};
+    float rpy[3]={};
 
+    int aux[2]={};
     int i = 0;
+
+    int16_t normChannels[7]={};
 
     // Loop principal!
     while(1) {
