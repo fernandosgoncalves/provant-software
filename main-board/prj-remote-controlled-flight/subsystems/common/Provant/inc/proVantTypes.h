@@ -154,5 +154,11 @@ namespace proVant{
 		int16_t mag[3];
 		int16_t acc[3];
 	} rawImuData;
+
+	typedef struct{
+		atitude atitudeVant;
+		position positionVant;
+		servos_state servos_stateVant;
+	} states;
 }
 #endif /* PROVANTTYPES_H_ */

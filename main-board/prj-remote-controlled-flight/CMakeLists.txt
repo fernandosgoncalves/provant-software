@@ -23,7 +23,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 
 # CONFIGURATIONS FOR PROJECT  ------------------------------------------------
-set(PROJECT_NAME 	provant_main_v1)
+set(PROJECT_NAME 	provant_main_hil)
 
 set(MAIN_DIR		"${CMAKE_CURRENT_LIST_DIR}/main")
 set(PROJECT_BUILD_DIR	"${CMAKE_CURRENT_LIST_DIR}/build")
@@ -44,12 +44,10 @@ file(MAKE_DIRECTORY ${PROJECT_INCLUDE_DIR})
 file(MAKE_DIRECTORY ${PROJECT_DOC_DIR})
 
 # Adding modules via subsystem folders
-add_subdirectory("${PROJECT_SUBSYS_DIR}/subsys_DataProcessing")
 add_subdirectory("${PROJECT_SUBSYS_DIR}/subsys_ContinuousControl")
+add_subdirectory("${PROJECT_SUBSYS_DIR}/subsys_DataProcessing")
 add_subdirectory("${PROJECT_SUBSYS_DIR}/subsys_CommLowLevel")
-
-
-
+add_subdirectory("${PROJECT_SUBSYS_DIR}/subsys_CommHIL")
 
 # Set the source files
 set(SRCS
@@ -84,8 +82,13 @@ set(CMAKE_INSTALL_PREFIX    "${CMAKE_CURRENT_BINARY_DIR}/dist")
 set(CMAKE_C_COMPILER	arm-linux-gnueabihf-gcc)
 set(CMAKE_CXX_COMPILER	arm-linux-gnueabihf-g++)
 
-set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11 -march=armv7-a -mtune=cortex-a8 -mfloat-abi=hard -mfpu=neon -ffast-math -O3" ) #softfp
-set( CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -std=c++11 -march=armv7-a -mtune=cortex-a8 -mfloat-abi=hard -mfpu=neon -ffast-math -O3" )
+if(HIL)
+	set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11 -march=armv7-a -mtune=cortex-a8 -mfloat-abi=hard -mfpu=neon -ffast-math -O3 -DENABLE_HIL=1" ) #softfp
+	set( CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -std=c++11 -march=armv7-a -mtune=cortex-a8 -mfloat-abi=hard -mfpu=neon -ffast-math -O3 -DENABLE_HIL=1" )
+else()
+	set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11 -march=armv7-a -mtune=cortex-a8 -mfloat-abi=hard -mfpu=neon -ffast-math -O3" ) #softfp
+	set( CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -std=c++11 -march=armv7-a -mtune=cortex-a8 -mfloat-abi=hard -mfpu=neon -ffast-math -O3" )
+endif()
 #set( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -pg" )
 
 # FINDING PACKAGES -----------------------------------------------------------
@@ -109,33 +112,34 @@ set(Boost_LIBRARIES   	"$ENV{HOME}/boost/boost_lib/lib")
 
 # BUILDING IT -----------------------------------------------------------------
 include_directories(
-        ${PROJECT_INCLUDE_DIR}
+	${PROJECT_SUBSYS_DIR}/common/BeagleInterface/inc
+	${PROJECT_SUBSYS_DIR}/common/HILInterface/inc
+	${PROJECT_SUBSYS_DIR}/common/Trajectory/inc		
+	${PROJECT_SUBSYS_DIR}/common/Controller/inc
+	${PROJECT_SUBSYS_DIR}/common/Provant/inc
+	${PROJECT_SUBSYS_DIR}/common/Models/inc
+	${PROJECT_COMMON_DIR_SUBSYS}/
+	${PROJECT_SUBSYS_DIR}/common
+        ${PROJECT_COMMON_DIR}/inc
+	${PROJECT_INCLUDE_DIR}
         ${PROJECT_CONFIG_DIR}
         ${Boost_INCLUDE_DIRS}
-        "${PROJECT_COMMON_DIR}/inc"
-	"${PROJECT_SUBSYS_DIR}/common"        
-	"${PROJECT_SUBSYS_DIR}/common/Provant/inc"
-	"${PROJECT_SUBSYS_DIR}/common/BeagleInterface/inc"
-	${PROJECT_SUBSYS_DIR}/common/Controller/inc
-	${PROJECT_SUBSYS_DIR}/common/Models/inc
-	${PROJECT_SUBSYS_DIR}/common/Trajectory/inc		
-	${PROJECT_COMMON_DIR_SUBSYS}/
-	
 	
 	# Include all `ext` directories in each subsystem
-        "${PROJECT_SUBSYS_DIR}/subsys_DataProcessing/inc"
         "${PROJECT_SUBSYS_DIR}/subsys_ContinuousControl/inc"
+        "${PROJECT_SUBSYS_DIR}/subsys_DataProcessing/inc"
         "${PROJECT_SUBSYS_DIR}/subsys_CommLowLevel/inc"
 	${PROJECT_SUBSYS_DIR}/common/qpOases/include
+        "${PROJECT_SUBSYS_DIR}/subsys_CommHIL/inc"
 )
 
 link_directories(
-        ${Boost_LIBRARIES}
-        "${PROJECT_SUBSYS_DIR}/subsys_DataProcessing/build"
         "${PROJECT_SUBSYS_DIR}/subsys_ContinuousControl/build"
+        "${PROJECT_SUBSYS_DIR}/subsys_DataProcessing/build"
         "${PROJECT_SUBSYS_DIR}/subsys_CommLowLevel/build"
+        "${PROJECT_SUBSYS_DIR}/subsys_CommHIL/build"
 	${PROJECT_SUBSYS_DIR}/common/qpOases/bin
-	
+        ${Boost_LIBRARIES}	
 )
 
 add_executable(${PROJECT_NAME} ${HDRS} ${SRCS})
@@ -144,9 +148,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX _d)
 
 target_link_libraries(${PROJECT_NAME}
                         # Subsystems
-                        subsys_DataProcessing_bundle
                         subsys_ContinuousControl_bundle
+                        subsys_DataProcessing_bundle
 			subsys_CommLowLevel_bundle
+			subsys_CommHIL_bundle
 			# System libraries
                         pthread
                         qpOASES
@@ -155,9 +160,7 @@ target_link_libraries(${PROJECT_NAME}
 			boost_chrono
                         rt
                         boost_log
-                        boost_log_setup
-			
-			
+                        boost_log_setup	
  )
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BUILD_DIR})

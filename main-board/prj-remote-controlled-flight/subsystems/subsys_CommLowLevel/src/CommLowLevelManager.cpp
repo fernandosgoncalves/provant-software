@@ -75,7 +75,7 @@ void CommLowLevelManager::Run()
     float data1[2]={};
     float data2[2]={};
     float data3[2]={};
-    int i = 0, flag=0;
+    int flag=0;
 
     actuation.servoLeft=0;
     actuation.servoRight=0;
@@ -92,6 +92,18 @@ void CommLowLevelManager::Run()
     	/*Recive states from Discovery*/
     	flag=PROVANT.updateData();
 
+	#ifdef ENABLE_HIL
+    	interface->pop(position, interface->q_position_in);
+    	interface->pop(atitude, interface->q_atitude_in);
+    	interface->pop(servos, interface->q_servos_in);
+    	//interface->pop(debug, interface->q_debug_in);
+    	//interface->pop(rcNormalize, interface->q_rc_in);
+    	//interface->pop(status,interface->q_status_in);
+
+    	//Send Control to Comptational Model
+    	interface->pop(actuation, &interface->q_actuation_in
+    	interface->push(actuation, interface->q_actuation_out_)
+	else
     	atitude_aux = PROVANT.getVantData().getAtitude();
     	if (atitude_aux.dotPitch!=0 || atitude_aux.dotRoll!=0 || atitude_aux.dotYaw!=0 || atitude_aux.pitch!=0 || atitude_aux.roll!=0 || atitude_aux.yaw!=0){
     		atitude=atitude_aux;
@@ -116,7 +128,6 @@ void CommLowLevelManager::Run()
     	//rcNormalize= PROVANT.getVantData().getNormChannels();
     	status=PROVANT.getVantData().getStatus();
 
-
     	//Send Control to Discovery
     	if(interface->pop(actuation, &interface->q_actuation_in)){
     		/*Control*/
@@ -130,29 +141,32 @@ void CommLowLevelManager::Run()
     		PROVANT.multwii_sendstack();
     	}
 
-    	interface->push(position, interface->q_position_out_);
-    	interface->push(atitude, interface->q_atitude_out_);
-    	interface->push(servos, interface->q_servos_out_);
     	interface->push(debug, interface->q_debug_out_);
     	interface->push(rcNormalize, interface->q_rc_out_);
     	interface->push(status,interface->q_status_out_);
 
-    	interface->push(position, interface->q_position2_out_);
-    	interface->push(atitude, interface->q_atitude2_out_);
-    	interface->push(servos, interface->q_servos2_out_);
     	interface->push(debug, interface->q_debug2_out_);
     	interface->push(rcNormalize, interface->q_rc2_out_);
     	interface->push(actuation2, interface->q_actuation2_out_);
     	interface->push(status,interface->q_status2_out_);
+
+	#endif
+
+
+    	interface->push(position, interface->q_position_out_);
+    	interface->push(atitude, interface->q_atitude_out_);
+    	interface->push(servos, interface->q_servos_out_);
+
+    	interface->push(position, interface->q_position2_out_);
+    	interface->push(atitude, interface->q_atitude2_out_);
+    	interface->push(servos, interface->q_servos2_out_);
 
     	//Elapsed time code
 //    	auto end = std::chrono::steady_clock::now();
 //    	auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 //    	std::cout << "It took me " << (float)(elapsed.count()/1000) << " miliseconds." << std::endl;
 
-    	i++;
     	std::cout << "sp_thread1: " << sample_time.count()<< " microseconds." << std::endl;
-    	i++;
     	auto elapsed = boost::chrono::duration_cast<boost::chrono::microseconds>(boost::chrono::system_clock::now()-start);
     	boost::this_thread::sleep_until(boost::chrono::system_clock::now() + boost::chrono::microseconds((ms_sample_time*1000)-elapsed.count()));
     }

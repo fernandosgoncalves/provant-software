@@ -21,7 +21,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 
 # CONFIGURATIONS FOR PROJECT  ------------------------------------------------
-set(PROJECT_NAME 	subsys_CommLowLevel)
+set(PROJECT_NAME 	subsys_CommHIL)
 set(PROJECT_BUILD_DIR	"${CMAKE_CURRENT_LIST_DIR}/build")
 set(PROJECT_CONFIG_DIR	"${CMAKE_CURRENT_LIST_DIR}/config")
 set(PROJECT_SOURCE_DIR	"${CMAKE_CURRENT_LIST_DIR}/src")
@@ -45,22 +45,22 @@ file(MAKE_DIRECTORY ${PROJECT_DOC_DIR})
 set(MAIN_FILE ${PROJECT_SOURCE_DIR}/white_box_test.cpp)
 
 set(SRCS
-	${PROJECT_COMMON_DIR_SUBSYS}/Models/src/LoadTranportationModel.cpp
+        ${PROJECT_SOURCE_DIR}/CommHILInterface.cpp
+        ${PROJECT_SOURCE_DIR}/CommHILManager.cpp
 	${PROJECT_COMMON_DIR_SUBSYS}/Trajectory/src/ReferenceTrajectory.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Models/src/LoadTranportationModel.cpp
+      	${PROJECT_COMMON_DIR_SUBSYS}/HILInterface/src/socketTCPIP.cpp
+        ${PROJECT_COMMON_DIR_SUBSYS}/Provant/src/proVantProtocol.cpp
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/MpcControler.cpp
 	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/LQRControler.cpp
 	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/TESTActuator.cpp
-	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/MpcControler.cpp
-	${PROJECT_COMMON_DIR_SUBSYS}/Provant/src/proVantProtocol.cpp
 	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/MpcBirotor.cpp
 	${PROJECT_COMMON_DIR_SUBSYS}/BeagleInterface/src/uart.cpp
 	${PROJECT_COMMON_DIR_SUBSYS}/Models/src/AircraftModel.cpp
 	${PROJECT_COMMON_DIR_SUBSYS}/Controller/src/MpcLoad.cpp
 	${PROJECT_COMMON_DIR}/src/AbstractMessageInterface.cpp
-	${PROJECT_COMMON_DIR}/src/AbstractModuleManager.cpp			
+	${PROJECT_COMMON_DIR}/src/AbstractModuleManager.cpp
 	${PROJECT_COMMON_DIR_SUBSYS}/Provant/src/vant.cpp
-	${PROJECT_SOURCE_DIR}/CommLowLevelInterface.cpp
-	${PROJECT_SOURCE_DIR}/CommLowLevelManager.cpp
-	#${PROJECT_SOURCE_DIR}/SubModule2.cpp
 )
 
 
@@ -110,18 +110,17 @@ set(Boost_LIBRARIES   	"$ENV{HOME}/boost/boost_lib/lib")
 set(LIB_POSTFIX bundle)
 
 include_directories(
-        ${PROJECT_INCLUDE_DIR}
-        #${PROJECT_EXT_INCLUDE}
-        ${PROJECT_CONFIG_DIR}
-	${PROJECT_COMMON_DIR}/inc	
-	${PROJECT_COMMON_DIR_SUBSYS}/Provant/inc
 	${PROJECT_COMMON_DIR_SUBSYS}/BeagleInterface/inc
-	${PROJECT_COMMON_DIR_SUBSYS}/BeagleInterface/inc
-	${PROJECT_COMMON_DIR_SUBSYS}/Controller/inc
-	${PROJECT_COMMON_DIR_SUBSYS}/Models/inc
-	${PROJECT_COMMON_DIR_SUBSYS}/Trajectory/inc		
-        ${PROJECT_COMMON_DIR_SUBSYS}
+	${PROJECT_COMMON_DIR_SUBSYS}/HILInterface/inc
 	${PROJECT_COMMON_DIR_SUBSYS}/qpOases/include
+	${PROJECT_COMMON_DIR_SUBSYS}/Controller/inc
+	${PROJECT_COMMON_DIR_SUBSYS}/Trajectory/inc
+	"${PROJECT_COMMON_DIR_SUBSYS}/Provant/inc"
+	${PROJECT_COMMON_DIR_SUBSYS}/Models/inc
+        ${PROJECT_COMMON_DIR_SUBSYS}
+	${PROJECT_COMMON_DIR}/inc
+        ${PROJECT_INCLUDE_DIR}
+        ${PROJECT_CONFIG_DIR}
         ${Boost_INCLUDE_DIRS}
 )
 
